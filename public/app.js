@@ -150,33 +150,33 @@ var __makeRelativeRequire = function(require, mappings, pref) {
   }
 };
 require.register("container/App.jsx", function(exports, require, module) {
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require('react');
+var _react = require("react");
 
 var _react2 = _interopRequireDefault(_react);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var App = _react2.default.createClass({
-  displayName: 'App',
+  displayName: "App",
   render: function render() {
-    return _react2.default.createElement(
-      'div',
-      null,
-      'Pow'
-    );
+    return _react2.default.createElement("div", { "class": "Container" });
   }
 });
 
 exports.default = App;
 });
 
-require.register("initialize.js", function(exports, require, module) {
+require.register("container/CardsBlock.jsx", function(exports, require, module) {
+"use strict";
+});
+
+;require.register("initialize.js", function(exports, require, module) {
 'use strict';
 
 var _reactDom = require('react-dom');

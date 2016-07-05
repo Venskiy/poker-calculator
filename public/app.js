@@ -149,23 +149,51 @@ var __makeRelativeRequire = function(require, mappings, pref) {
     return require(name);
   }
 };
-require.register("container/App.jsx", function(exports, require, module) {
-"use strict";
+require.register("components/Card.jsx", function(exports, require, module) {
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+exports.default = function (_ref) {
+  var path = _ref.path;
+
+  return _react2.default.createElement('img', { src: path });
+};
+});
+
+;require.register("container/App.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _CardsBlock = require('./CardsBlock');
+
+var _CardsBlock2 = _interopRequireDefault(_CardsBlock);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 var App = _react2.default.createClass({
-  displayName: "App",
+  displayName: 'App',
   render: function render() {
-    return _react2.default.createElement("div", { "class": "Container" });
+    return _react2.default.createElement(
+      'div',
+      { className: 'Container' },
+      _react2.default.createElement(_CardsBlock2.default, null)
+    );
   }
 });
 
@@ -173,7 +201,40 @@ exports.default = App;
 });
 
 require.register("container/CardsBlock.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _Card = require('components/Card');
+
+var _Card2 = _interopRequireDefault(_Card);
+
+var _cards = require('utils/cards');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    'div',
+    { className: 'CardsBlock' },
+    _cards.suits.map(function (suit) {
+      return _react2.default.createElement(
+        'div',
+        { className: 'CardBlock-1' },
+        _cards.values.map(function (value) {
+          var path = 'img/cards/' + value + suit + '.png';
+          return _react2.default.createElement(_Card2.default, { path: path });
+        })
+      );
+    })
+  );
+};
 });
 
 ;require.register("initialize.js", function(exports, require, module) {
@@ -196,6 +257,16 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 document.addEventListener('DOMContentLoaded', function () {
   _reactDom2.default.render(_react2.default.createElement(_App2.default, null), document.querySelector('#app'));
 });
+});
+
+require.register("utils/cards.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var values = exports.values = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+var suits = exports.suits = ['S', 'C', 'D', 'H'];
 });
 
 require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {

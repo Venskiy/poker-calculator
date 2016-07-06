@@ -149,7 +149,37 @@ var __makeRelativeRequire = function(require, mappings, pref) {
     return require(name);
   }
 };
-require.register("components/Card.jsx", function(exports, require, module) {
+require.register("components/Board.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _CardShirt = require('./CardShirt');
+
+var _CardShirt2 = _interopRequireDefault(_CardShirt);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    'div',
+    { className: 'Board' },
+    _react2.default.createElement(_CardShirt2.default, null),
+    _react2.default.createElement(_CardShirt2.default, null),
+    _react2.default.createElement(_CardShirt2.default, null),
+    _react2.default.createElement(_CardShirt2.default, null),
+    _react2.default.createElement(_CardShirt2.default, null)
+  );
+};
+});
+
+;require.register("components/Card.jsx", function(exports, require, module) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -319,13 +349,18 @@ var _Player = require('components/Player');
 
 var _Player2 = _interopRequireDefault(_Player);
 
+var _Board = require('components/Board');
+
+var _Board2 = _interopRequireDefault(_Board);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = function () {
   return _react2.default.createElement(
     'div',
     { className: 'PokerTable' },
-    _react2.default.createElement(_Player2.default, null)
+    _react2.default.createElement(_Player2.default, null),
+    _react2.default.createElement(_Board2.default, null)
   );
 };
 });

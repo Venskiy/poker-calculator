@@ -42,6 +42,15 @@ body {
 
 }
 
+.CardShirt {
+  width: 55px;
+  height: 70px;
+  margin: 5px;
+  background-image: url(img/card-shirt.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 .Player {
   display: block;
   width: 120px;
@@ -57,18 +66,19 @@ body {
     height: 80px;
   }
 
-  .CardShirt {
-    width: 55px;
-    height: 70px;
-    margin: 5px;
-    background-image: url(img/card-shirt.png);
-    background-size: cover;
-    background-repeat: no-repeat;
-  }
-
   .PlayerName {
     text-align: center;
     font-size: 1.1em;
     color: #fff;
   }
+}
+
+.Board {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  width: 300px;
+  height: 75px;
+  left: 184px;
+  top: 16px;
 }

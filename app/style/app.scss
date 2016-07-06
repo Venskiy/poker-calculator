@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+}
+
+.Container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.CardsBlock {
+  flex: 0 0 330px;
+  display:flex;
+  flex-direction: column;;
+  margin-top: 15px;
+
+  &-suit {
+    display: flex;
+    flex-direction: row;
+  }
+
+  img {
+    width: 55px;
+    height: auto;
+  }
+}

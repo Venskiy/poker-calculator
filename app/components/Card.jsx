@@ -1,5 +1,7 @@
 import React from 'react'
 
 export default ({ path }) => {
-  return <img src={path}></img>
+  return <div className="Card">
+    <img src={path}></img>
+  </div>
 }

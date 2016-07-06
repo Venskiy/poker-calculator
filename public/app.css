@@ -1,3 +1,27 @@
+/* line 1, /home/ilya/dev/poker-calculator/app/style/app.scss */
+body {
+  margin: 0; }
+
+/* line 5, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Container {
+  height: 100%;
+  display: flex;
+  justify-content: center; }
+
+/* line 11, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.CardsBlock {
+  flex: 0 0 330px;
+  display: flex;
+  flex-direction: column;
+  margin-top: 15px; }
+  /* line 17, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .CardsBlock-suit {
+    display: flex;
+    flex-direction: row; }
+  /* line 22, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .CardsBlock img {
+    width: 55px;
+    height: auto; }
 
 
 /*# sourceMappingURL=app.css.map*/

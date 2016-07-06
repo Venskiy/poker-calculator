@@ -150,13 +150,13 @@ var __makeRelativeRequire = function(require, mappings, pref) {
   }
 };
 require.register("components/Card.jsx", function(exports, require, module) {
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require('react');
+var _react = require("react");
 
 var _react2 = _interopRequireDefault(_react);
 
@@ -165,7 +165,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 exports.default = function (_ref) {
   var path = _ref.path;
 
-  return _react2.default.createElement('img', { src: path });
+  return _react2.default.createElement(
+    "div",
+    { className: "Card" },
+    _react2.default.createElement("img", { src: path })
+  );
 };
 });
 
@@ -226,7 +230,7 @@ exports.default = function () {
     _cards.suits.map(function (suit) {
       return _react2.default.createElement(
         'div',
-        { className: 'CardBlock-1' },
+        { className: 'CardsBlock-suit' },
         _cards.values.map(function (value) {
           var path = 'img/cards/' + value + suit + '.png';
           return _react2.default.createElement(_Card2.default, { path: path });

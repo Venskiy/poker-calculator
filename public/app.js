@@ -173,6 +173,60 @@ exports.default = function (_ref) {
 };
 });
 
+;require.register("components/CardShirt.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement("div", { className: "CardShirt" });
+};
+});
+
+;require.register("components/Player.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _CardShirt = require('./CardShirt');
+
+var _CardShirt2 = _interopRequireDefault(_CardShirt);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    'div',
+    { className: 'Player' },
+    _react2.default.createElement(
+      'div',
+      { className: 'Hand' },
+      _react2.default.createElement(_CardShirt2.default, null),
+      _react2.default.createElement(_CardShirt2.default, null)
+    ),
+    _react2.default.createElement(
+      'div',
+      { className: 'PlayerName' },
+      'Player'
+    )
+  );
+};
+});
+
 ;require.register("container/App.jsx", function(exports, require, module) {
 'use strict';
 
@@ -251,20 +305,28 @@ exports.default = function () {
 });
 
 ;require.register("container/PokerTable.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
+
+var _Player = require('components/Player');
+
+var _Player2 = _interopRequireDefault(_Player);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = function () {
-  return _react2.default.createElement("div", { className: "PokerTable" });
+  return _react2.default.createElement(
+    'div',
+    { className: 'PokerTable' },
+    _react2.default.createElement(_Player2.default, null)
+  );
 };
 });
 

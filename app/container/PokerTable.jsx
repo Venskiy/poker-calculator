@@ -1,5 +1,9 @@
 import React from 'react';
 
+import Player from 'components/Player';
+
 export default () => {
-  return <div className="PokerTable"></div>;
+  return <div className="PokerTable">
+    <Player />
+  </div>;
 }

@@ -41,3 +41,34 @@ body {
   }
 
 }
+
+.Player {
+  display: block;
+  width: 120px;
+  height: 105px;
+  position: relative;
+  left: 100px;
+  top: 0px;
+
+  .Hand {
+    display: flex;
+    justify-content: center;
+    width: 120px;
+    height: 80px;
+  }
+
+  .CardShirt {
+    width: 55px;
+    height: 70px;
+    margin: 5px;
+    background-image: url(img/card-shirt.png);
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  .PlayerName {
+    text-align: center;
+    font-size: 1.1em;
+    color: #fff;
+  }
+}

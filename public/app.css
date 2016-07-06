@@ -37,5 +37,33 @@ body {
     background-size: cover;
     background-repeat: no-repeat; }
 
+/* line 45, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Player {
+  display: block;
+  width: 120px;
+  height: 105px;
+  position: relative;
+  left: 100px;
+  top: 0px; }
+  /* line 53, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Player .Hand {
+    display: flex;
+    justify-content: center;
+    width: 120px;
+    height: 80px; }
+  /* line 60, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Player .CardShirt {
+    width: 55px;
+    height: 70px;
+    margin: 5px;
+    background-image: url(img/card-shirt.png);
+    background-size: cover;
+    background-repeat: no-repeat; }
+  /* line 69, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Player .PlayerName {
+    text-align: center;
+    font-size: 1.1em;
+    color: #fff; }
+
 
 /*# sourceMappingURL=app.css.map*/

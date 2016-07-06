@@ -8,19 +8,36 @@ body {
   justify-content: center;
 }
 
-.CardsBlock {
-  flex: 0 0 330px;
-  display:flex;
-  flex-direction: column;;
+.CardsAndTable {
+  flex: 0 0 1346px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
   margin-top: 15px;
 
-  &-suit {
-    display: flex;
-    flex-direction: row;
+  .CardsBlock {
+    flex: 0 0 693px;
+    display:flex;
+    justify-content: space-between;
+    flex-direction: column;
+
+    &-suit {
+      display: flex;
+      justify-content: space-between;
+      flex-direction: row;
+    }
+
+    img {
+      width: 53px;
+      height: auto;
+    }
   }
 
-  img {
-    width: 55px;
-    height: auto;
+  .PokerTable {
+    flex: 0 0 650px;
+    background-image: url(img/poker-table.png);
+    background-size: cover;
+    background-repeat: no-repeat;
   }
+
 }

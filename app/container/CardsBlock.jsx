@@ -1,7 +1,7 @@
-import React from 'react'
+import React from 'react';
 
-import Card from 'components/Card'
-import {values, suits} from 'utils/cards'
+import Card from 'components/Card';
+import {values, suits} from 'utils/cards';
 
 export default () => {
   return <div className="CardsBlock">

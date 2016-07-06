@@ -188,6 +188,10 @@ var _CardsBlock = require('./CardsBlock');
 
 var _CardsBlock2 = _interopRequireDefault(_CardsBlock);
 
+var _PokerTable = require('./PokerTable');
+
+var _PokerTable2 = _interopRequireDefault(_PokerTable);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var App = _react2.default.createClass({
@@ -196,7 +200,12 @@ var App = _react2.default.createClass({
     return _react2.default.createElement(
       'div',
       { className: 'Container' },
-      _react2.default.createElement(_CardsBlock2.default, null)
+      _react2.default.createElement(
+        'div',
+        { className: 'CardsAndTable' },
+        _react2.default.createElement(_CardsBlock2.default, null),
+        _react2.default.createElement(_PokerTable2.default, null)
+      )
     );
   }
 });
@@ -238,6 +247,24 @@ exports.default = function () {
       );
     })
   );
+};
+});
+
+;require.register("container/PokerTable.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement("div", { className: "PokerTable" });
 };
 });
 

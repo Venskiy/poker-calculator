@@ -257,6 +257,36 @@ exports.default = function () {
 };
 });
 
+;require.register("components/PlayersAmount.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var playersAmount = [2, 3, 4, 5, 6, 7, 8, 9];
+
+exports.default = function () {
+  return _react2.default.createElement(
+    'select',
+    null,
+    playersAmount.map(function (amount) {
+      return _react2.default.createElement(
+        'option',
+        { key: amount, value: amount },
+        amount
+      );
+    })
+  );
+};
+});
+
 ;require.register("container/App.jsx", function(exports, require, module) {
 'use strict';
 
@@ -276,6 +306,10 @@ var _PokerTable = require('./PokerTable');
 
 var _PokerTable2 = _interopRequireDefault(_PokerTable);
 
+var _Options = require('./Options');
+
+var _Options2 = _interopRequireDefault(_Options);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var App = _react2.default.createClass({
@@ -289,6 +323,11 @@ var App = _react2.default.createClass({
         { className: 'CardsAndTable' },
         _react2.default.createElement(_CardsBlock2.default, null),
         _react2.default.createElement(_PokerTable2.default, null)
+      ),
+      _react2.default.createElement(
+        'div',
+        { className: 'OptionsAndStatistics' },
+        _react2.default.createElement(_Options2.default, null)
       )
     );
   }
@@ -330,6 +369,45 @@ exports.default = function () {
         })
       );
     })
+  );
+};
+});
+
+;require.register("container/Options.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _PlayersAmount = require('components/PlayersAmount');
+
+var _PlayersAmount2 = _interopRequireDefault(_PlayersAmount);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    'div',
+    { className: 'Options' },
+    _react2.default.createElement(
+      'div',
+      { className: 'PlayersAmount' },
+      _react2.default.createElement(
+        'div',
+        null,
+        'Select the amount of players: '
+      ),
+      _react2.default.createElement(
+        'div',
+        null,
+        _react2.default.createElement(_PlayersAmount2.default, null)
+      )
+    )
   );
 };
 });

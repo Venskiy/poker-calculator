@@ -149,16 +149,7 @@ var __makeRelativeRequire = function(require, mappings, pref) {
     return require(name);
   }
 };
-require.register("actions/actionTypes.js", function(exports, require, module) {
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-var CHANGE_PLAYERS_AMOUNT_SUCCESS = exports.CHANGE_PLAYERS_AMOUNT_SUCCESS = 'CHANGE_PLAYERS_AMOUNT_SUCCESS';
-});
-
-require.register("actions/playersActions.js", function(exports, require, module) {
+require.register("actions.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -168,6 +159,13 @@ var setPlayersAmount = exports.setPlayersAmount = function setPlayersAmount(play
   return {
     type: 'SET_PLAYERS_AMOUNT',
     playersAmount: playersAmount
+  };
+};
+
+var selectCard = exports.selectCard = function selectCard(cardName) {
+  return {
+    type: 'SELECT_CARD',
+    cardName: cardName
   };
 };
 });
@@ -203,30 +201,46 @@ exports.default = function () {
 });
 
 ;require.register("components/Card.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function (_ref) {
-  var path = _ref.path;
+exports.default = _react2.default.createClass({
+  displayName: 'Card',
 
-  return _react2.default.createElement(
-    "div",
-    { className: "Card" },
-    _react2.default.createElement("img", { src: path })
-  );
-};
+  propTypes: {
+    cardName: _react2.default.PropTypes.string.isRequired,
+    selected: _react2.default.PropTypes.string,
+    onSelect: _react2.default.PropTypes.func.isRequired
+  },
+
+  handleSelect: function handleSelect(cardName) {
+    this.props.onSelect(cardName);
+  },
+  render: function render() {
+    var cardName = this.props.cardName;
+    var path = 'img/cards/' + cardName + '.png';
+    var isSelected = cardName === this.props.selected;
+    var className = isSelected ? 'Card-selected' : 'Card';
+
+    return _react2.default.createElement(
+      'div',
+      { className: className, onClick: this.handleSelect.bind(this, cardName) },
+      _react2.default.createElement('img', { src: path })
+    );
+  }
+});
 });
 
-;require.register("components/CardShirt.jsx", function(exports, require, module) {
+require.register("components/CardShirt.jsx", function(exports, require, module) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -396,6 +410,10 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _reactRedux = require('react-redux');
+
+var _actions = require('actions');
+
 var _Card = require('components/Card');
 
 var _Card2 = _interopRequireDefault(_Card);
@@ -404,7 +422,10 @@ var _cards = require('utils/cards');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
+var CardsBlock = function CardsBlock(_ref) {
+  var selectedCard = _ref.selectedCard;
+  var onSelectCard = _ref.onSelectCard;
+
   return _react2.default.createElement(
     'div',
     { className: 'CardsBlock' },
@@ -413,16 +434,32 @@ exports.default = function () {
         'div',
         { className: 'CardsBlock-suit' },
         _cards.values.map(function (value) {
-          var path = 'img/cards/' + value + suit + '.png';
-          return _react2.default.createElement(_Card2.default, { path: path });
+          var cardName = value + suit;
+          return _react2.default.createElement(_Card2.default, { cardName: cardName, selected: selectedCard, onSelect: onSelectCard });
         })
       );
     })
   );
 };
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {
+    selectedCard: state.selectedCard
+  };
+};
+
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+  return {
+    onSelectCard: function onSelectCard(cardName) {
+      dispatch((0, _actions.selectCard)(cardName));
+    }
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(CardsBlock);
 });
 
-;require.register("container/Options.jsx", function(exports, require, module) {
+require.register("container/Options.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -435,7 +472,7 @@ var _react2 = _interopRequireDefault(_react);
 
 var _reactRedux = require('react-redux');
 
-var _playersActions = require('actions/playersActions');
+var _actions = require('actions');
 
 var _PlayersAmount = require('components/PlayersAmount');
 
@@ -444,8 +481,8 @@ var _PlayersAmount2 = _interopRequireDefault(_PlayersAmount);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Options = function Options(_ref) {
-  var onPlayersAmountChange = _ref.onPlayersAmountChange;
   var playersAmount = _ref.playersAmount;
+  var onPlayersAmountChange = _ref.onPlayersAmountChange;
 
   return _react2.default.createElement(
     'div',
@@ -476,7 +513,7 @@ var mapStateToProps = function mapStateToProps(state) {
 var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
     onPlayersAmountChange: function onPlayersAmountChange(playersAmount) {
-      dispatch((0, _playersActions.setPlayersAmount)(playersAmount));
+      dispatch((0, _actions.setPlayersAmount)(playersAmount));
     }
   };
 };
@@ -548,9 +585,9 @@ var _redux = require('redux');
 
 var _reactRedux = require('react-redux');
 
-var _playersReducers = require('reducers/playersReducers');
+var _reducer = require('reducer');
 
-var _playersReducers2 = _interopRequireDefault(_playersReducers);
+var _reducer2 = _interopRequireDefault(_reducer);
 
 var _App = require('container/App');
 
@@ -558,7 +595,7 @@ var _App2 = _interopRequireDefault(_App);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var store = (0, _redux.createStore)(_playersReducers2.default);
+var store = (0, _redux.createStore)(_reducer2.default);
 
 document.addEventListener('DOMContentLoaded', function () {
   _reactDom2.default.render(_react2.default.createElement(
@@ -569,7 +606,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 });
 
-require.register("reducers/playersReducers.js", function(exports, require, module) {
+require.register("reducer.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -583,6 +620,8 @@ exports.default = function () {
   switch (action.type) {
     case 'SET_PLAYERS_AMOUNT':
       return Object.assign({}, state, { playersAmount: action.playersAmount });
+    case 'SELECT_CARD':
+      return Object.assign({}, state, { selectedCard: action.cardName });
     default:
       return state;
   }

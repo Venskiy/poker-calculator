@@ -1,10 +1,10 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {setPlayersAmount} from 'actions/playersActions';
+import {setPlayersAmount} from 'actions';
 
 import PlayersAmount from 'components/PlayersAmount';
 
-const Options = ({onPlayersAmountChange, playersAmount}) => {
+const Options = ({playersAmount, onPlayersAmountChange}) => {
   return <div className="Options">
     <div className="PlayersAmount">
       <div>Select the amount of players: </div>

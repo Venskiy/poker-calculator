@@ -35,6 +35,15 @@ body {
   }
 }
 
+.Card {
+  width: 53px;
+  height: auto;
+  
+  &-selected {
+    border: 3px solid pink;
+  }
+}
+
 .PokerTable {
   flex: 0 0 650px;
   background-image: url(img/poker-table.png);

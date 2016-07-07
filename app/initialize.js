@@ -3,10 +3,10 @@ import React from 'react';
 import {createStore} from 'redux';
 import {Provider} from 'react-redux';
 
-import playersReducers from 'reducers/playersReducers';
+import reducer from 'reducer';
 import App from 'container/App';
 
-const store = createStore(playersReducers);
+const store = createStore(reducer);
 
 document.addEventListener('DOMContentLoaded', () => {
   ReactDOM.render(

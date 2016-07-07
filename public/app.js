@@ -261,7 +261,9 @@ var _CardShirt2 = _interopRequireDefault(_CardShirt);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
+exports.default = function (_ref) {
+  var number = _ref.number;
+
   return _react2.default.createElement(
     'div',
     { className: 'Player' },
@@ -274,7 +276,7 @@ exports.default = function () {
     _react2.default.createElement(
       'div',
       { className: 'PlayerName' },
-      'Player'
+      number
     )
   );
 };
@@ -502,13 +504,19 @@ var _Board2 = _interopRequireDefault(_Board);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var PokerTable = function PokerTable(_ref) {
   var playersAmount = _ref.playersAmount;
+
+  var amount = parseInt(playersAmount, 10);
 
   return _react2.default.createElement(
     'div',
     { className: 'PokerTable' },
-    _react2.default.createElement(_Player2.default, null),
+    [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
+      return _react2.default.createElement(_Player2.default, { number: i + 1 });
+    }),
     _react2.default.createElement(_Board2.default, null),
     _react2.default.createElement(
       'div',

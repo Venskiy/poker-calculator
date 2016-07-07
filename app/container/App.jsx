@@ -1,4 +1,5 @@
 import React from 'react';
+import {connect} from 'react-redux';
 
 import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';
@@ -20,4 +21,8 @@ const App = React.createClass({
   }
 });
 
-export default App;
+const mapStateToProps = (state) => ({
+  playersAmount: state.playersAmount
+});
+
+export default connect(mapStateToProps)(App);

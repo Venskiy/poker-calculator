@@ -15,32 +15,31 @@ body {
   flex-direction: row;
   justify-content: center;
   margin-top: 15px;
+}
 
-  .CardsBlock {
-    flex: 0 0 693px;
-    display:flex;
+.CardsBlock {
+  flex: 0 0 693px;
+  display:flex;
+  justify-content: space-between;
+  flex-direction: column;
+
+  &-suit {
+    display: flex;
     justify-content: space-between;
-    flex-direction: column;
-
-    &-suit {
-      display: flex;
-      justify-content: space-between;
-      flex-direction: row;
-    }
-
-    img {
-      width: 53px;
-      height: auto;
-    }
+    flex-direction: row;
   }
 
-  .PokerTable {
-    flex: 0 0 650px;
-    background-image: url(img/poker-table.png);
-    background-size: cover;
-    background-repeat: no-repeat;
+  img {
+    width: 53px;
+    height: auto;
   }
+}
 
+.PokerTable {
+  flex: 0 0 650px;
+  background-image: url(img/poker-table.png);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .CardShirt {
@@ -59,19 +58,19 @@ body {
   position: relative;
   left: 100px;
   top: 0px;
+}
 
-  .Hand {
-    display: flex;
-    justify-content: center;
-    width: 120px;
-    height: 80px;
-  }
+.Hand {
+  display: flex;
+  justify-content: center;
+  width: 120px;
+  height: 80px;
+}
 
-  .PlayerName {
-    text-align: center;
-    font-size: 1.1em;
-    color: #fff;
-  }
+.PlayerName {
+  text-align: center;
+  font-size: 1.1em;
+  color: #fff;
 }
 
 .Board {

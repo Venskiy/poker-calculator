@@ -149,6 +149,29 @@ var __makeRelativeRequire = function(require, mappings, pref) {
     return require(name);
   }
 };
+require.register("actions/actionTypes.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var CHANGE_PLAYERS_AMOUNT_SUCCESS = exports.CHANGE_PLAYERS_AMOUNT_SUCCESS = 'CHANGE_PLAYERS_AMOUNT_SUCCESS';
+});
+
+require.register("actions/playersActions.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var setPlayersAmount = exports.setPlayersAmount = function setPlayersAmount(playersAmount) {
+  return {
+    type: 'SET_PLAYERS_AMOUNT',
+    playersAmount: playersAmount
+  };
+};
+});
+
 require.register("components/Board.jsx", function(exports, require, module) {
 'use strict';
 
@@ -258,13 +281,13 @@ exports.default = function () {
 });
 
 ;require.register("components/PlayersAmount.jsx", function(exports, require, module) {
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require('react');
+var _react = require("react");
 
 var _react2 = _interopRequireDefault(_react);
 
@@ -272,22 +295,35 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var playersAmount = [2, 3, 4, 5, 6, 7, 8, 9];
 
-exports.default = function () {
-  return _react2.default.createElement(
-    'select',
-    null,
-    playersAmount.map(function (amount) {
-      return _react2.default.createElement(
-        'option',
-        { key: amount, value: amount },
-        amount
-      );
-    })
-  );
-};
+exports.default = _react2.default.createClass({
+  displayName: "PlayersAmount",
+
+  propTypes: {
+    onPlayersAmountChange: _react2.default.PropTypes.func.isRequired,
+    playersAmount: _react2.default.PropTypes.number.isRequired
+  },
+
+  changePlayersAmount: function changePlayersAmount() {
+    var value = this.refs.playersAmount.value;
+    this.props.onPlayersAmountChange(value);
+  },
+  render: function render() {
+    return _react2.default.createElement(
+      "select",
+      { ref: "playersAmount", value: this.props.playersAmount, onChange: this.changePlayersAmount },
+      playersAmount.map(function (amount) {
+        return _react2.default.createElement(
+          "option",
+          { key: amount, value: amount },
+          amount
+        );
+      })
+    );
+  }
+});
 });
 
-;require.register("container/App.jsx", function(exports, require, module) {
+require.register("container/App.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -297,6 +333,8 @@ Object.defineProperty(exports, "__esModule", {
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
+
+var _reactRedux = require('react-redux');
 
 var _CardsBlock = require('./CardsBlock');
 
@@ -333,7 +371,13 @@ var App = _react2.default.createClass({
   }
 });
 
-exports.default = App;
+var mapStateToProps = function mapStateToProps(state) {
+  return {
+    playersAmount: state.playersAmount
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps)(App);
 });
 
 require.register("container/CardsBlock.jsx", function(exports, require, module) {
@@ -384,13 +428,20 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _reactRedux = require('react-redux');
+
+var _playersActions = require('actions/playersActions');
+
 var _PlayersAmount = require('components/PlayersAmount');
 
 var _PlayersAmount2 = _interopRequireDefault(_PlayersAmount);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
+var Options = function Options(_ref) {
+  var onPlayersAmountChange = _ref.onPlayersAmountChange;
+  var playersAmount = _ref.playersAmount;
+
   return _react2.default.createElement(
     'div',
     { className: 'Options' },
@@ -405,14 +456,30 @@ exports.default = function () {
       _react2.default.createElement(
         'div',
         null,
-        _react2.default.createElement(_PlayersAmount2.default, null)
+        _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount })
       )
     )
   );
 };
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {
+    playersAmount: state.playersAmount
+  };
+};
+
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+  return {
+    onPlayersAmountChange: function onPlayersAmountChange(playersAmount) {
+      dispatch((0, _playersActions.setPlayersAmount)(playersAmount));
+    }
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(Options);
 });
 
-;require.register("container/PokerTable.jsx", function(exports, require, module) {
+require.register("container/PokerTable.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -422,6 +489,8 @@ Object.defineProperty(exports, "__esModule", {
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
+
+var _reactRedux = require('react-redux');
 
 var _Player = require('components/Player');
 
@@ -433,17 +502,32 @@ var _Board2 = _interopRequireDefault(_Board);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
+var PokerTable = function PokerTable(_ref) {
+  var playersAmount = _ref.playersAmount;
+
   return _react2.default.createElement(
     'div',
     { className: 'PokerTable' },
     _react2.default.createElement(_Player2.default, null),
-    _react2.default.createElement(_Board2.default, null)
+    _react2.default.createElement(_Board2.default, null),
+    _react2.default.createElement(
+      'div',
+      null,
+      playersAmount
+    )
   );
 };
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {
+    playersAmount: state.playersAmount
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps)(PokerTable);
 });
 
-;require.register("initialize.js", function(exports, require, module) {
+require.register("initialize.js", function(exports, require, module) {
 'use strict';
 
 var _reactDom = require('react-dom');
@@ -454,18 +538,56 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _redux = require('redux');
+
+var _reactRedux = require('react-redux');
+
+var _playersReducers = require('reducers/playersReducers');
+
+var _playersReducers2 = _interopRequireDefault(_playersReducers);
+
 var _App = require('container/App');
 
 var _App2 = _interopRequireDefault(_App);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var store = (0, _redux.createStore)(_playersReducers2.default);
+
 document.addEventListener('DOMContentLoaded', function () {
-  _reactDom2.default.render(_react2.default.createElement(_App2.default, null), document.querySelector('#app'));
+  _reactDom2.default.render(_react2.default.createElement(
+    _reactRedux.Provider,
+    { store: store },
+    _react2.default.createElement(_App2.default, null)
+  ), document.querySelector('#app'));
 });
 });
 
-require.register("utils/cards.js", function(exports, require, module) {
+require.register("reducers/playersReducers.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+exports.default = function () {
+  var state = arguments.length <= 0 || arguments[0] === undefined ? initialState : arguments[0];
+  var action = arguments[1];
+
+  switch (action.type) {
+    case 'SET_PLAYERS_AMOUNT':
+      return Object.assign({}, state, { playersAmount: action.playersAmount });
+    default:
+      return state;
+  }
+};
+
+var initialState = {
+  playersAmount: 7
+};
+});
+
+;require.register("utils/cards.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

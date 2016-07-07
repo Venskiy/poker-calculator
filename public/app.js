@@ -264,9 +264,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 exports.default = function (_ref) {
   var number = _ref.number;
 
+  var className = 'Player-' + number;
+  var playerName = 'Player' + number;
+
   return _react2.default.createElement(
     'div',
-    { className: 'Player' },
+    { className: className },
     _react2.default.createElement(
       'div',
       { className: 'Hand' },
@@ -276,7 +279,7 @@ exports.default = function (_ref) {
     _react2.default.createElement(
       'div',
       { className: 'PlayerName' },
-      number
+      playerName
     )
   );
 };
@@ -517,12 +520,7 @@ var PokerTable = function PokerTable(_ref) {
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
       return _react2.default.createElement(_Player2.default, { number: i + 1 });
     }),
-    _react2.default.createElement(_Board2.default, null),
-    _react2.default.createElement(
-      'div',
-      null,
-      playersAmount
-    )
+    _react2.default.createElement(_Board2.default, null)
   );
 };
 

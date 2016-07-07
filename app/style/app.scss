@@ -52,11 +52,62 @@ body {
 }
 
 .Player {
-  display: block;
   width: 120px;
   height: 105px;
-  position: relative;
-  left: 100px;
+  position: absolute;
+}
+
+.Player-1 {
+  @extend .Player;
+  left: 810px;
+  top: 0px;
+}
+
+.Player-2 {
+  @extend .Player;
+  left: 710px;
+  top: 80px;
+}
+
+.Player-3 {
+  @extend .Player;
+  left: 710px;
+  top: 180px;
+}
+
+.Player-4 {
+  @extend .Player;
+  left: 830px;
+  top: 230px;
+}
+
+.Player-5 {
+  @extend .Player;
+  left: 970px;
+  top: 230px;
+}
+
+.Player-6 {
+  @extend .Player;
+  left: 1110px;
+  top: 230px;
+}
+
+.Player-7 {
+  @extend .Player;
+  left: 1230px;
+  top: 180px;
+}
+
+.Player-8 {
+  @extend .Player;
+  left: 1230px;
+  top: 80px;
+}
+
+.Player-9 {
+  @extend .Player;
+  left: 1135px;
   top: 0px;
 }
 
@@ -70,7 +121,7 @@ body {
 .PlayerName {
   text-align: center;
   font-size: 1.1em;
-  color: #fff;
+  color: #f2f2f2;
 }
 
 .Board {
@@ -80,7 +131,7 @@ body {
   width: 300px;
   height: 75px;
   left: 184px;
-  top: 16px;
+  top: 120px;
 }
 
 .OptionsAndStatistics {

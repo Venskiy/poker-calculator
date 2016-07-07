@@ -12,7 +12,6 @@ const PokerTable = ({playersAmount}) => {
       <Player number={i + 1} />
     )}
     <Board />
-    <div>{playersAmount}</div>
   </div>;
 }
 

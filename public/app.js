@@ -168,9 +168,17 @@ var selectCard = exports.selectCard = function selectCard(cardName) {
     cardName: cardName
   };
 };
+
+var addCardToPokerTable = exports.addCardToPokerTable = function addCardToPokerTable(selectedCard, cardName) {
+  return {
+    type: 'ADD_CARD_TO_POKER_TABLE',
+    selectedCard: selectedCard,
+    cardName: cardName
+  };
+};
 });
 
-require.register("components/Board.jsx", function(exports, require, module) {
+;require.register("components/Board.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -190,6 +198,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 exports.default = function (_ref) {
+  var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
 
@@ -221,22 +230,24 @@ exports.default = _react2.default.createClass({
 
   propTypes: {
     cardName: _react2.default.PropTypes.string.isRequired,
-    selected: _react2.default.PropTypes.string,
-    onSelect: _react2.default.PropTypes.func.isRequired
+    selected: _react2.default.PropTypes.string.isRequired,
+    onSelect: _react2.default.PropTypes.func,
+    addCard: _react2.default.PropTypes.func
   },
 
-  handleSelect: function handleSelect(cardName) {
-    this.props.onSelect(cardName);
+  handleClick: function handleClick(selectedCard, cardName) {
+    cardName.startsWith('X') ? this.props.onSelect(cardName) : this.props.addCard(selectedCard, cardName);
   },
   render: function render() {
     var cardName = this.props.cardName;
+    var selectedCard = this.props.selected;
     var path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
-    var isSelected = cardName === this.props.selected;
+    var isSelected = cardName === selectedCard;
     var className = isSelected ? 'Card-selected' : 'Card';
 
     return _react2.default.createElement(
       'div',
-      { className: className, onClick: this.handleSelect.bind(this, cardName) },
+      { className: className, onClick: this.handleClick.bind(this, selectedCard, cardName) },
       _react2.default.createElement('img', { src: path })
     );
   }
@@ -262,13 +273,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 exports.default = function (_ref) {
   var number = _ref.number;
+  var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
 
   var className = 'Player-' + number;
   var playerName = 'Player' + number;
-  var cardNameFirst = 'XF' + number;
-  var cardNameSecond = 'XS' + number;
+  var cardNameFirst = pokerTableCards['XF' + number];
+  var cardNameSecond = pokerTableCards['XS' + number];
 
   return _react2.default.createElement(
     'div',
@@ -369,7 +381,7 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'CardsAndTable' },
-        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard }),
+        _react2.default.createElement(_CardsBlock2.default, { selected: this.props.selectedCard, addCardToPokerTable: this.props.addCardToPokerTable }),
         _react2.default.createElement(_PokerTable2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard })
       ),
       _react2.default.createElement(
@@ -389,6 +401,9 @@ var mapStateToProps = function mapStateToProps(state) {
 
 var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
+    addCardToPokerTable: function addCardToPokerTable(selectedCard, cardName) {
+      dispatch((0, _actions.addCardToPokerTable)(selectedCard, cardName));
+    },
     onSelectCard: function onSelectCard(cardName) {
       dispatch((0, _actions.selectCard)(cardName));
     }
@@ -418,8 +433,8 @@ var _cards = require('utils/cards');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = function (_ref) {
-  var selectedCard = _ref.selectedCard;
-  var onSelectCard = _ref.onSelectCard;
+  var selected = _ref.selected;
+  var addCardToPokerTable = _ref.addCardToPokerTable;
 
   return _react2.default.createElement(
     'div',
@@ -430,7 +445,7 @@ exports.default = function (_ref) {
         { className: 'CardsBlock-suit' },
         _cards.values.map(function (value) {
           var cardName = value + suit;
-          return _react2.default.createElement(_Card2.default, { cardName: cardName, selected: selectedCard, onSelect: onSelectCard });
+          return _react2.default.createElement(_Card2.default, { selected: selected, cardName: cardName, addCard: addCardToPokerTable });
         })
       );
     })
@@ -527,6 +542,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 var PokerTable = function PokerTable(_ref) {
   var playersAmount = _ref.playersAmount;
+  var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
 
@@ -536,15 +552,16 @@ var PokerTable = function PokerTable(_ref) {
     'div',
     { className: 'PokerTable' },
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Player2.default, { number: i + 1, selectedCard: selectedCard, onSelectCard: onSelectCard });
+      return _react2.default.createElement(_Player2.default, { number: i + 1, pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard });
     }),
-    _react2.default.createElement(_Board2.default, { selectedCard: selectedCard, onSelectCard: onSelectCard })
+    _react2.default.createElement(_Board2.default, { pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard })
   );
 };
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    playersAmount: state.playersAmount
+    playersAmount: state.playersAmount,
+    pokerTableCards: state.pokerTableCards
   };
 };
 
@@ -603,6 +620,10 @@ exports.default = function () {
       return Object.assign({}, state, { playersAmount: action.playersAmount });
     case 'SELECT_CARD':
       return Object.assign({}, state, { selectedCard: action.cardName });
+    case 'ADD_CARD_TO_POKER_TABLE':
+      var pokerTableCards = Object.assign({}, state.pokerTableCards);
+      pokerTableCards[action.selectedCard] = action.cardName;
+      return Object.assign({}, state, { pokerTableCards: pokerTableCards });
     default:
       return state;
   }
@@ -610,7 +631,19 @@ exports.default = function () {
 
 var initialState = {
   playersAmount: 2,
-  selectedCard: 'XF1'
+  selectedCard: 'XF1',
+  pokerTableCards: {
+    'XF1': 'XF1', 'XS1': 'XS1',
+    'XF2': 'XF2', 'XS2': 'XS2',
+    'XF3': 'XF3', 'XS3': 'XS3',
+    'XF4': 'XF4', 'XS4': 'XS4',
+    'XF5': 'XF5', 'XS5': 'XS5',
+    'XF6': 'XF6', 'XS6': 'XS6',
+    'XF7': 'XF7', 'XS7': 'XS7',
+    'XF8': 'XF8', 'XS8': 'XS8',
+    'XF9': 'XF9', 'XS9': 'XS9',
+    'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
+  }
 };
 });
 

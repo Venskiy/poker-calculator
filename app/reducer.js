@@ -1,3 +1,5 @@
+import {changeSelection} from 'utils/changeSelection';
+
 const initialState = {
   playersAmount: 2,
   selectedCard: 'XF1',
@@ -11,7 +13,7 @@ const initialState = {
     'XF7': 'XF7', 'XS7': 'XS7',
     'XF8': 'XF8', 'XS8': 'XS8',
     'XF9': 'XF9', 'XS9': 'XS9',
-    'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5' 
+    'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   }
 };
 
@@ -24,7 +26,8 @@ export default function(state = initialState, action) {
     case 'ADD_CARD_TO_POKER_TABLE':
       const pokerTableCards = Object.assign({}, state.pokerTableCards);
       pokerTableCards[action.selectedCard] = action.cardName;
-      return Object.assign({}, state, { pokerTableCards: pokerTableCards });
+      const selectedCard = changeSelection(pokerTableCards);
+      return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards});
     default:
       return state;
   }

@@ -623,11 +623,14 @@ exports.default = function () {
     case 'ADD_CARD_TO_POKER_TABLE':
       var pokerTableCards = Object.assign({}, state.pokerTableCards);
       pokerTableCards[action.selectedCard] = action.cardName;
-      return Object.assign({}, state, { pokerTableCards: pokerTableCards });
+      var selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
+      return Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards });
     default:
       return state;
   }
 };
+
+var _changeSelection = require('utils/changeSelection');
 
 var initialState = {
   playersAmount: 2,
@@ -655,6 +658,42 @@ Object.defineProperty(exports, "__esModule", {
 });
 var values = exports.values = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
 var suits = exports.suits = ['S', 'C', 'D', 'H'];
+});
+
+require.register("utils/changeSelection.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var changeSelection = exports.changeSelection = function changeSelection(pokerTableCards) {
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = Object.keys(pokerTableCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var key = _step.value;
+
+      if (pokerTableCards[key].startsWith('X')) {
+        return key;
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+};
 });
 
 require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {

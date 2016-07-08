@@ -1,5 +1,6 @@
 const initialState = {
-  playersAmount: 7
+  playersAmount: 2,
+  selectedCard: 'XF1'
 };
 
 export default function(state = initialState, action) {

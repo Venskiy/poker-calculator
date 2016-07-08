@@ -13,7 +13,7 @@ export default React.createClass({
 
   render() {
     const cardName = this.props.cardName;
-    const path = 'img/cards/' + cardName + '.png';
+    const path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
     const isSelected = cardName === this.props.selected;
     const className = isSelected ? 'Card-selected' : 'Card';
 

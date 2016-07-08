@@ -227,7 +227,7 @@ exports.default = _react2.default.createClass({
   },
   render: function render() {
     var cardName = this.props.cardName;
-    var path = 'img/cards/' + cardName + '.png';
+    var path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
     var isSelected = cardName === this.props.selected;
     var className = isSelected ? 'Card-selected' : 'Card';
 
@@ -269,17 +269,21 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _CardShirt = require('./CardShirt');
+var _Card = require('./Card');
 
-var _CardShirt2 = _interopRequireDefault(_CardShirt);
+var _Card2 = _interopRequireDefault(_Card);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = function (_ref) {
   var number = _ref.number;
+  var selectedCard = _ref.selectedCard;
+  var onSelectCard = _ref.onSelectCard;
 
   var className = 'Player-' + number;
   var playerName = 'Player' + number;
+  var cardNameFirst = 'XF' + number;
+  var cardNameSecond = 'XS' + number;
 
   return _react2.default.createElement(
     'div',
@@ -287,8 +291,8 @@ exports.default = function (_ref) {
     _react2.default.createElement(
       'div',
       { className: 'Hand' },
-      _react2.default.createElement(_CardShirt2.default, null),
-      _react2.default.createElement(_CardShirt2.default, null)
+      _react2.default.createElement(_Card2.default, { cardName: cardNameFirst, selected: selectedCard, onSelect: onSelectCard }),
+      _react2.default.createElement(_Card2.default, { cardName: cardNameSecond, selected: selectedCard, onSelect: onSelectCard })
     ),
     _react2.default.createElement(
       'div',
@@ -355,6 +359,8 @@ var _react2 = _interopRequireDefault(_react);
 
 var _reactRedux = require('react-redux');
 
+var _actions = require('actions');
+
 var _CardsBlock = require('./CardsBlock');
 
 var _CardsBlock2 = _interopRequireDefault(_CardsBlock);
@@ -378,8 +384,8 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'CardsAndTable' },
-        _react2.default.createElement(_CardsBlock2.default, null),
-        _react2.default.createElement(_PokerTable2.default, null)
+        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard }),
+        _react2.default.createElement(_PokerTable2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard })
       ),
       _react2.default.createElement(
         'div',
@@ -392,11 +398,19 @@ var App = _react2.default.createClass({
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    playersAmount: state.playersAmount
+    selectedCard: state.selectedCard
   };
 };
 
-exports.default = (0, _reactRedux.connect)(mapStateToProps)(App);
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+  return {
+    onSelectCard: function onSelectCard(cardName) {
+      dispatch((0, _actions.selectCard)(cardName));
+    }
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(App);
 });
 
 require.register("container/CardsBlock.jsx", function(exports, require, module) {
@@ -410,10 +424,6 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _reactRedux = require('react-redux');
-
-var _actions = require('actions');
-
 var _Card = require('components/Card');
 
 var _Card2 = _interopRequireDefault(_Card);
@@ -422,7 +432,7 @@ var _cards = require('utils/cards');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var CardsBlock = function CardsBlock(_ref) {
+exports.default = function (_ref) {
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
 
@@ -441,22 +451,6 @@ var CardsBlock = function CardsBlock(_ref) {
     })
   );
 };
-
-var mapStateToProps = function mapStateToProps(state) {
-  return {
-    selectedCard: state.selectedCard
-  };
-};
-
-var mapDispatchToProps = function mapDispatchToProps(dispatch) {
-  return {
-    onSelectCard: function onSelectCard(cardName) {
-      dispatch((0, _actions.selectCard)(cardName));
-    }
-  };
-};
-
-exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(CardsBlock);
 });
 
 require.register("container/Options.jsx", function(exports, require, module) {
@@ -548,6 +542,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 var PokerTable = function PokerTable(_ref) {
   var playersAmount = _ref.playersAmount;
+  var selectedCard = _ref.selectedCard;
+  var onSelectCard = _ref.onSelectCard;
 
   var amount = parseInt(playersAmount, 10);
 
@@ -555,7 +551,7 @@ var PokerTable = function PokerTable(_ref) {
     'div',
     { className: 'PokerTable' },
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Player2.default, { number: i + 1 });
+      return _react2.default.createElement(_Player2.default, { number: i + 1, selectedCard: selectedCard, onSelectCard: onSelectCard });
     }),
     _react2.default.createElement(_Board2.default, null)
   );
@@ -628,7 +624,8 @@ exports.default = function () {
 };
 
 var initialState = {
-  playersAmount: 7
+  playersAmount: 2,
+  selectedCard: 'XF1'
 };
 });
 

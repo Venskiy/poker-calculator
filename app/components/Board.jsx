@@ -1,13 +1,11 @@
 import React from 'react';
 
-import CardShirt from './CardShirt';
+import Card from './Card';
 
-export default () => {
+export default ({selectedCard, onSelectCard}) => {
   return <div className="Board">
-    <CardShirt />
-    <CardShirt />
-    <CardShirt />
-    <CardShirt />
-    <CardShirt />
+    {[...Array(5)].map((x, i) =>
+      <Card cardName={'XB' + i} selected={selectedCard} onSelect={onSelectCard} />
+    )}
   </div>
 }

@@ -181,21 +181,24 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _CardShirt = require('./CardShirt');
+var _Card = require('./Card');
 
-var _CardShirt2 = _interopRequireDefault(_CardShirt);
+var _Card2 = _interopRequireDefault(_Card);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+exports.default = function (_ref) {
+  var selectedCard = _ref.selectedCard;
+  var onSelectCard = _ref.onSelectCard;
+
   return _react2.default.createElement(
     'div',
     { className: 'Board' },
-    _react2.default.createElement(_CardShirt2.default, null),
-    _react2.default.createElement(_CardShirt2.default, null),
-    _react2.default.createElement(_CardShirt2.default, null),
-    _react2.default.createElement(_CardShirt2.default, null),
-    _react2.default.createElement(_CardShirt2.default, null)
+    [].concat(_toConsumableArray(Array(5))).map(function (x, i) {
+      return _react2.default.createElement(_Card2.default, { cardName: 'XB' + i, selected: selectedCard, onSelect: onSelectCard });
+    })
   );
 };
 });
@@ -240,25 +243,7 @@ exports.default = _react2.default.createClass({
 });
 });
 
-require.register("components/CardShirt.jsx", function(exports, require, module) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require("react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = function () {
-  return _react2.default.createElement("div", { className: "CardShirt" });
-};
-});
-
-;require.register("components/Player.jsx", function(exports, require, module) {
+require.register("components/Player.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -553,7 +538,7 @@ var PokerTable = function PokerTable(_ref) {
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
       return _react2.default.createElement(_Player2.default, { number: i + 1, selectedCard: selectedCard, onSelectCard: onSelectCard });
     }),
-    _react2.default.createElement(_Board2.default, null)
+    _react2.default.createElement(_Board2.default, { selectedCard: selectedCard, onSelectCard: onSelectCard })
   );
 };
 

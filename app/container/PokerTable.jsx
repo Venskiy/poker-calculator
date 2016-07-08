@@ -11,7 +11,7 @@ const PokerTable = ({playersAmount, selectedCard, onSelectCard}) => {
     {[...Array(amount)].map((x, i) =>
       <Player number={i + 1} selectedCard={selectedCard} onSelectCard={onSelectCard} />
     )}
-    <Board />
+    <Board selectedCard={selectedCard} onSelectCard={onSelectCard} />
   </div>;
 }
 

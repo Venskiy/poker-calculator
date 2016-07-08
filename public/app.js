@@ -206,7 +206,7 @@ exports.default = function (_ref) {
     'div',
     { className: 'Board' },
     [].concat(_toConsumableArray(Array(5))).map(function (x, i) {
-      return _react2.default.createElement(_Card2.default, { cardName: 'XB' + i, selected: selectedCard, onSelect: onSelectCard });
+      return _react2.default.createElement(_Card2.default, { cardName: pokerTableCards['XB' + (i + 1)], selected: selectedCard, onSelect: onSelectCard });
     })
   );
 };

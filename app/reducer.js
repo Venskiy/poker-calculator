@@ -14,7 +14,8 @@ const initialState = {
     'XF8': 'XF8', 'XS8': 'XS8',
     'XF9': 'XF9', 'XS9': 'XS9',
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
-  }
+  },
+  chosenCards: []
 };
 
 export default function(state = initialState, action) {
@@ -27,7 +28,9 @@ export default function(state = initialState, action) {
       const pokerTableCards = Object.assign({}, state.pokerTableCards);
       pokerTableCards[action.selectedCard] = action.cardName;
       const selectedCard = changeSelection(pokerTableCards);
-      return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards});
+      const chosenCards = state.chosenCards;
+      chosenCards.push(action.cardName);
+      return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
     default:
       return state;
   }

@@ -39,6 +39,12 @@ body {
   width: 49px;
   height: 70px;
 
+  &-chosen {
+    width: 49px;
+    height: 70px;
+    opacity: 0.2;
+  }
+
   &-selected {
     width: 49px;
     height: 70px;

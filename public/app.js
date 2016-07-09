@@ -178,7 +178,7 @@ var addCardToPokerTable = exports.addCardToPokerTable = function addCardToPokerT
 };
 });
 
-;require.register("components/Board.jsx", function(exports, require, module) {
+require.register("components/Board.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -231,6 +231,7 @@ exports.default = _react2.default.createClass({
   propTypes: {
     cardName: _react2.default.PropTypes.string.isRequired,
     selected: _react2.default.PropTypes.string.isRequired,
+    isChosen: _react2.default.PropTypes.boolean,
     onSelect: _react2.default.PropTypes.func,
     addCard: _react2.default.PropTypes.func
   },
@@ -241,9 +242,11 @@ exports.default = _react2.default.createClass({
   render: function render() {
     var cardName = this.props.cardName;
     var selectedCard = this.props.selected;
+    var isChosen = this.props.isChosen;
+
     var path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
     var isSelected = cardName === selectedCard;
-    var className = isSelected ? 'Card-selected' : 'Card';
+    var className = isChosen ? 'Card-chosen' : isSelected ? 'Card-selected' : 'Card';
 
     return _react2.default.createElement(
       'div',
@@ -424,6 +427,8 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _reactRedux = require('react-redux');
+
 var _Card = require('components/Card');
 
 var _Card2 = _interopRequireDefault(_Card);
@@ -432,8 +437,9 @@ var _cards = require('utils/cards');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function (_ref) {
+var CardsBlock = function CardsBlock(_ref) {
   var selected = _ref.selected;
+  var chosenCards = _ref.chosenCards;
   var addCardToPokerTable = _ref.addCardToPokerTable;
 
   return _react2.default.createElement(
@@ -445,12 +451,23 @@ exports.default = function (_ref) {
         { className: 'CardsBlock-suit' },
         _cards.values.map(function (value) {
           var cardName = value + suit;
-          return _react2.default.createElement(_Card2.default, { selected: selected, cardName: cardName, addCard: addCardToPokerTable });
+          var isChosen = chosenCards.findIndex(function (card) {
+            return card === cardName;
+          }) > -1;
+          return _react2.default.createElement(_Card2.default, { cardName: cardName, selected: selected, isChosen: isChosen, addCard: addCardToPokerTable });
         })
       );
     })
   );
 };
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {
+    chosenCards: state.chosenCards
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps)(CardsBlock);
 });
 
 require.register("container/Options.jsx", function(exports, require, module) {
@@ -624,7 +641,9 @@ exports.default = function () {
       var pokerTableCards = Object.assign({}, state.pokerTableCards);
       pokerTableCards[action.selectedCard] = action.cardName;
       var selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
-      return Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards });
+      var chosenCards = state.chosenCards;
+      chosenCards.push(action.cardName);
+      return Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards });
     default:
       return state;
   }
@@ -646,7 +665,8 @@ var initialState = {
     'XF8': 'XF8', 'XS8': 'XS8',
     'XF9': 'XF9', 'XS9': 'XS9',
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
-  }
+  },
+  chosenCards: []
 };
 });
 

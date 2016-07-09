@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {selectCard, addCardToPokerTable} from 'actions';
+import {selectCard, addCardToPokerTable, chooseCard} from 'actions';
 
 import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';

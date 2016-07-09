@@ -13,7 +13,7 @@ const PokerTable = ({playersAmount, pokerTableCards, selectedCard, onSelectCard}
     )}
     <Board pokerTableCards={pokerTableCards} selectedCard={selectedCard} onSelectCard={onSelectCard} />
   </div>;
-}
+};
 
 const mapStateToProps = (state) => ({
   playersAmount: state.playersAmount,

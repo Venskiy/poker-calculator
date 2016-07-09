@@ -8,8 +8,7 @@ export const selectCard = (cardName) => ({
   cardName
 });
 
-export const addCardToPokerTable = (selectedCard, cardName) => ({
+export const addCardToPokerTable = (cardName) => ({
   type: 'ADD_CARD_TO_POKER_TABLE',
-  selectedCard,
   cardName
 });

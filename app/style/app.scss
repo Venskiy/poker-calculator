@@ -38,10 +38,10 @@ body {
 .Card {
   width: 49px;
   height: 70px;
+  border: 1px solid #333;
 
   &-chosen {
-    width: 49px;
-    height: 70px;
+    @extend .Card;
     opacity: 0.2;
   }
 
@@ -49,6 +49,21 @@ body {
     width: 49px;
     height: 70px;
     border: 3px solid #6e84cf;
+  }
+
+  &-in {
+    @extend .Card;
+    background-image: url(img/delete-cross.png);
+    background-repeat: no-repeat;
+    background-size: 47px;
+    background-position: center;
+    margin: 1px;
+  }
+
+  &-in:hover {
+    img {
+      opacity: 0;
+    }
   }
 }
 
@@ -60,16 +75,8 @@ body {
 
   .Card {
     padding: 3px;
+    border: 0px;
   }
-}
-
-.CardShirt {
-  width: 55px;
-  height: 70px;
-  margin: 5px;
-  background-image: url(img/card-shirt.png);
-  background-size: cover;
-  background-repeat: no-repeat;
 }
 
 .Player {

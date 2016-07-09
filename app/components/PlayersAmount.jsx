@@ -4,8 +4,8 @@ const playersAmount = [2, 3, 4, 5, 6, 7, 8, 9];
 
 export default React.createClass({
   propTypes: {
-    onPlayersAmountChange: React.PropTypes.func.isRequired,
-    playersAmount: React.PropTypes.number.isRequired
+    playersAmount: React.PropTypes.number.isRequired,
+    onPlayersAmountChange: React.PropTypes.func.isRequired
   },
 
   changePlayersAmount() {

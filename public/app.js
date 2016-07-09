@@ -169,10 +169,9 @@ var selectCard = exports.selectCard = function selectCard(cardName) {
   };
 };
 
-var addCardToPokerTable = exports.addCardToPokerTable = function addCardToPokerTable(selectedCard, cardName) {
+var addCardToPokerTable = exports.addCardToPokerTable = function addCardToPokerTable(cardName) {
   return {
     type: 'ADD_CARD_TO_POKER_TABLE',
-    selectedCard: selectedCard,
     cardName: cardName
   };
 };
@@ -189,9 +188,9 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _Card = require('./Card');
+var _PokerTableCard = require('./PokerTableCard');
 
-var _Card2 = _interopRequireDefault(_Card);
+var _PokerTableCard2 = _interopRequireDefault(_PokerTableCard);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -206,7 +205,7 @@ exports.default = function (_ref) {
     'div',
     { className: 'Board' },
     [].concat(_toConsumableArray(Array(5))).map(function (x, i) {
-      return _react2.default.createElement(_Card2.default, { cardName: pokerTableCards['XB' + (i + 1)], selected: selectedCard, onSelect: onSelectCard });
+      return _react2.default.createElement(_PokerTableCard2.default, { cardName: pokerTableCards['XB' + (i + 1)], selected: selectedCard, onSelect: onSelectCard });
     })
   );
 };
@@ -230,27 +229,21 @@ exports.default = _react2.default.createClass({
 
   propTypes: {
     cardName: _react2.default.PropTypes.string.isRequired,
-    selected: _react2.default.PropTypes.string.isRequired,
-    isChosen: _react2.default.PropTypes.boolean,
-    onSelect: _react2.default.PropTypes.func,
-    addCard: _react2.default.PropTypes.func
+    isChosen: _react2.default.PropTypes.bool.isRequired,
+    addCard: _react2.default.PropTypes.func.isRequired
   },
 
-  handleClick: function handleClick(selectedCard, cardName) {
-    cardName.startsWith('X') ? this.props.onSelect(cardName) : this.props.addCard(selectedCard, cardName);
+  handleClick: function handleClick(cardName) {
+    this.props.isChosen ? alert('This card is already chosen.') : this.props.addCard(cardName);
   },
   render: function render() {
     var cardName = this.props.cardName;
-    var selectedCard = this.props.selected;
-    var isChosen = this.props.isChosen;
-
-    var path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
-    var isSelected = cardName === selectedCard;
-    var className = isChosen ? 'Card-chosen' : isSelected ? 'Card-selected' : 'Card';
+    var className = this.props.isChosen ? 'Card-chosen' : 'Card';
+    var path = 'img/cards/' + cardName + '.png';
 
     return _react2.default.createElement(
       'div',
-      { className: className, onClick: this.handleClick.bind(this, selectedCard, cardName) },
+      { className: className, onClick: this.handleClick.bind(this, cardName) },
       _react2.default.createElement('img', { src: path })
     );
   }
@@ -268,9 +261,9 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _Card = require('./Card');
+var _PokerTableCard = require('./PokerTableCard');
 
-var _Card2 = _interopRequireDefault(_Card);
+var _PokerTableCard2 = _interopRequireDefault(_PokerTableCard);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -291,8 +284,8 @@ exports.default = function (_ref) {
     _react2.default.createElement(
       'div',
       { className: 'Hand' },
-      _react2.default.createElement(_Card2.default, { cardName: cardNameFirst, selected: selectedCard, onSelect: onSelectCard }),
-      _react2.default.createElement(_Card2.default, { cardName: cardNameSecond, selected: selectedCard, onSelect: onSelectCard })
+      _react2.default.createElement(_PokerTableCard2.default, { cardName: cardNameFirst, selected: selectedCard, onSelect: onSelectCard }),
+      _react2.default.createElement(_PokerTableCard2.default, { cardName: cardNameSecond, selected: selectedCard, onSelect: onSelectCard })
     ),
     _react2.default.createElement(
       'div',
@@ -322,8 +315,8 @@ exports.default = _react2.default.createClass({
   displayName: "PlayersAmount",
 
   propTypes: {
-    onPlayersAmountChange: _react2.default.PropTypes.func.isRequired,
-    playersAmount: _react2.default.PropTypes.number.isRequired
+    playersAmount: _react2.default.PropTypes.number.isRequired,
+    onPlayersAmountChange: _react2.default.PropTypes.func.isRequired
   },
 
   changePlayersAmount: function changePlayersAmount() {
@@ -341,6 +334,47 @@ exports.default = _react2.default.createClass({
           amount
         );
       })
+    );
+  }
+});
+});
+
+require.register("components/PokerTableCard.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = _react2.default.createClass({
+  displayName: 'PokerTableCard',
+
+  propTypes: {
+    cardName: _react2.default.PropTypes.string.isRequired,
+    selected: _react2.default.PropTypes.string,
+    onSelect: _react2.default.PropTypes.func.isRequired
+  },
+
+  handleClick: function handleClick(cardName) {
+    this.props.onSelect(cardName);
+  },
+  render: function render() {
+    var cardName = this.props.cardName;
+    var selectedCard = this.props.selected;
+    var isSelected = cardName === selectedCard;
+    var className = isSelected ? 'Card-selected' : cardName.startsWith('X') ? 'Card' : 'Card-in';
+    var path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
+
+    return _react2.default.createElement(
+      'div',
+      { className: className, onClick: this.handleClick.bind(this, cardName) },
+      _react2.default.createElement('img', { src: path })
     );
   }
 });
@@ -384,7 +418,7 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'CardsAndTable' },
-        _react2.default.createElement(_CardsBlock2.default, { selected: this.props.selectedCard, addCardToPokerTable: this.props.addCardToPokerTable }),
+        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard, addCardToPokerTable: this.props.addCardToPokerTable }),
         _react2.default.createElement(_PokerTable2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard })
       ),
       _react2.default.createElement(
@@ -404,8 +438,8 @@ var mapStateToProps = function mapStateToProps(state) {
 
 var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
-    addCardToPokerTable: function addCardToPokerTable(selectedCard, cardName) {
-      dispatch((0, _actions.addCardToPokerTable)(selectedCard, cardName));
+    addCardToPokerTable: function addCardToPokerTable(cardName, selectedCard) {
+      dispatch((0, _actions.addCardToPokerTable)(cardName));
     },
     onSelectCard: function onSelectCard(cardName) {
       dispatch((0, _actions.selectCard)(cardName));
@@ -438,7 +472,7 @@ var _cards = require('utils/cards');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var CardsBlock = function CardsBlock(_ref) {
-  var selected = _ref.selected;
+  var selectedCard = _ref.selectedCard;
   var chosenCards = _ref.chosenCards;
   var addCardToPokerTable = _ref.addCardToPokerTable;
 
@@ -454,7 +488,7 @@ var CardsBlock = function CardsBlock(_ref) {
           var isChosen = chosenCards.findIndex(function (card) {
             return card === cardName;
           }) > -1;
-          return _react2.default.createElement(_Card2.default, { cardName: cardName, selected: selected, isChosen: isChosen, addCard: addCardToPokerTable });
+          return _react2.default.createElement(_Card2.default, { cardName: cardName, isChosen: isChosen, addCard: addCardToPokerTable });
         })
       );
     })
@@ -638,18 +672,12 @@ exports.default = function () {
     case 'SELECT_CARD':
       return Object.assign({}, state, { selectedCard: action.cardName });
     case 'ADD_CARD_TO_POKER_TABLE':
-      if (state.chosenCards.findIndex(function (card) {
-        return card === action.cardName;
-      }) > -1) {
-        alert('This card is already chosen');
-      } else {
-        var pokerTableCards = Object.assign({}, state.pokerTableCards);
-        pokerTableCards[action.selectedCard] = action.cardName;
-        var selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
-        var chosenCards = state.chosenCards;
-        chosenCards.push(action.cardName);
-        return Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards });
-      }
+      var pokerTableCards = Object.assign({}, state.pokerTableCards);
+      pokerTableCards[state.selectedCard] = action.cardName;
+      var selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
+      var chosenCards = state.chosenCards;
+      chosenCards.push(action.cardName);
+      return Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards });
     default:
       return state;
   }

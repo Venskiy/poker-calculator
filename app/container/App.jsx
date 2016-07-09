@@ -11,7 +11,7 @@ const App = React.createClass({
     return (
       <div className="Container">
         <div className="CardsAndTable">
-          <CardsBlock selected={this.props.selectedCard} addCardToPokerTable={this.props.addCardToPokerTable} />
+          <CardsBlock selectedCard={this.props.selectedCard} addCardToPokerTable={this.props.addCardToPokerTable} />
           <PokerTable selectedCard={this.props.selectedCard} onSelectCard={this.props.onSelectCard} />
         </div>
         <div className="OptionsAndStatistics">
@@ -27,8 +27,8 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  addCardToPokerTable(selectedCard, cardName) {
-    dispatch(addCardToPokerTable(selectedCard, cardName));
+  addCardToPokerTable(cardName, selectedCard) {
+    dispatch(addCardToPokerTable(cardName));
   },
 
   onSelectCard(cardName) {

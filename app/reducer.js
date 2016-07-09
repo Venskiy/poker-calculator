@@ -25,12 +25,17 @@ export default function(state = initialState, action) {
     case 'SELECT_CARD':
       return Object.assign({}, state, {selectedCard: action.cardName});
     case 'ADD_CARD_TO_POKER_TABLE':
-      const pokerTableCards = Object.assign({}, state.pokerTableCards);
-      pokerTableCards[action.selectedCard] = action.cardName;
-      const selectedCard = changeSelection(pokerTableCards);
-      const chosenCards = state.chosenCards;
-      chosenCards.push(action.cardName);
-      return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
+      if(state.chosenCards.findIndex(card => card === action.cardName) > -1) {
+        alert('This card is already chosen');
+      }
+      else {
+        const pokerTableCards = Object.assign({}, state.pokerTableCards);
+        pokerTableCards[action.selectedCard] = action.cardName;
+        const selectedCard = changeSelection(pokerTableCards);
+        const chosenCards = state.chosenCards;
+        chosenCards.push(action.cardName);
+        return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
+      }
     default:
       return state;
   }

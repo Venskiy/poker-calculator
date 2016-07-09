@@ -19,18 +19,30 @@ const initialState = {
 };
 
 export default function(state = initialState, action) {
+  let pokerTableCards;
+  let chosenCards;
   switch (action.type) {
     case 'SET_PLAYERS_AMOUNT':
       return Object.assign({}, state, {playersAmount: action.playersAmount});
     case 'SELECT_CARD':
       return Object.assign({}, state, {selectedCard: action.cardName});
     case 'ADD_CARD_TO_POKER_TABLE':
-      const pokerTableCards = Object.assign({}, state.pokerTableCards);
+      pokerTableCards = Object.assign({}, state.pokerTableCards);
       pokerTableCards[state.selectedCard] = action.cardName;
       const selectedCard = changeSelection(pokerTableCards);
-      const chosenCards = state.chosenCards;
+      chosenCards = state.chosenCards;
       chosenCards.push(action.cardName);
       return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
+    case 'REMOVE_CARD_FROM_POKER_TABLE':
+      pokerTableCards = Object.assign({}, state.pokerTableCards);
+      for (var key of Object.keys(pokerTableCards)) {
+        if(pokerTableCards[key] === action.cardName) {
+          pokerTableCards[key] = key;
+          break;
+        }
+      }
+      chosenCards = state.chosenCards.filter(card => card !== action.cardName);
+      return Object.assign({}, state, {selectedCard: action.cardName, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
     default:
       return state;
   }

@@ -676,61 +676,82 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 exports.default = function () {
   var state = arguments.length <= 0 || arguments[0] === undefined ? initialState : arguments[0];
   var action = arguments[1];
 
   var pokerTableCards = void 0;
   var chosenCards = void 0;
-  switch (action.type) {
-    case 'SET_PLAYERS_AMOUNT':
-      return Object.assign({}, state, { playersAmount: action.playersAmount });
-    case 'SELECT_CARD':
-      return Object.assign({}, state, { selectedCard: action.cardName });
-    case 'ADD_CARD_TO_POKER_TABLE':
-      pokerTableCards = Object.assign({}, state.pokerTableCards);
-      pokerTableCards[state.selectedCard] = action.cardName;
-      var selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
-      chosenCards = state.chosenCards;
-      chosenCards.push(action.cardName);
-      return Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards });
-    case 'REMOVE_CARD_FROM_POKER_TABLE':
-      pokerTableCards = Object.assign({}, state.pokerTableCards);
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+  var selectedCard = void 0;
+  var key;
 
-      try {
-        for (var _iterator = Object.keys(pokerTableCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var key = _step.value;
+  var _ret = function () {
+    switch (action.type) {
+      case 'SET_PLAYERS_AMOUNT':
+        return {
+          v: Object.assign({}, state, { playersAmount: action.playersAmount })
+        };
+      case 'SELECT_CARD':
+        return {
+          v: Object.assign({}, state, { selectedCard: action.cardName })
+        };
+      case 'ADD_CARD_TO_POKER_TABLE':
+        pokerTableCards = Object.assign({}, state.pokerTableCards);
+        pokerTableCards[state.selectedCard] = action.cardName;
+        selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
+        chosenCards = state.chosenCards;
+        chosenCards.push(action.cardName);
+        return {
+          v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
+        };
+      case 'REMOVE_CARD_FROM_POKER_TABLE':
+        var cardName = action.cardName;
+        pokerTableCards = Object.assign({}, state.pokerTableCards);
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
 
-          if (pokerTableCards[key] === action.cardName) {
-            pokerTableCards[key] = key;
-            break;
-          }
-        }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
         try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
+          for (var _iterator = Object.keys(pokerTableCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            key = _step.value;
+
+            if (pokerTableCards[key] === cardName) {
+              pokerTableCards[key] = key;
+              selectedCard = key;
+              break;
+            }
           }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
         } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
           }
         }
-      }
 
-      chosenCards = state.chosenCards.filter(function (card) {
-        return card !== action.cardName;
-      });
-      return Object.assign({}, state, { selectedCard: action.cardName, pokerTableCards: pokerTableCards, chosenCards: chosenCards });
-    default:
-      return state;
-  }
+        chosenCards = state.chosenCards.filter(function (card) {
+          return card !== cardName;
+        });
+        return {
+          v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
+        };
+      default:
+        return {
+          v: state
+        };
+    }
+  }();
+
+  if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 };
 
 var _changeSelection = require('utils/changeSelection');

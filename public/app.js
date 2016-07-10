@@ -182,6 +182,13 @@ var removeCardFromPokerTable = exports.removeCardFromPokerTable = function remov
     cardName: cardName
   };
 };
+
+var calculateStatistics = exports.calculateStatistics = function calculateStatistics(pokerStatistics) {
+  return {
+    type: 'ADD_POKER_STATISTICS',
+    pokerStatistics: pokerStatistics
+  };
+};
 });
 
 require.register("components/Board.jsx", function(exports, require, module) {
@@ -422,6 +429,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var App = _react2.default.createClass({
   displayName: 'App',
   render: function render() {
+    console.log(this.props.pokerStatistics);
+
     return _react2.default.createElement(
       'div',
       { className: 'Container' },
@@ -434,7 +443,8 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'OptionsAndStatistics' },
-        _react2.default.createElement(_Options2.default, null)
+        _react2.default.createElement(_Options2.default, null),
+        _react2.default.createElement('button', { onClick: this.props.calculateStatistics })
       )
     );
   }
@@ -442,7 +452,8 @@ var App = _react2.default.createClass({
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    selectedCard: state.selectedCard
+    selectedCard: state.selectedCard,
+    pokerStatistics: state.pokerStatistics
   };
 };
 
@@ -456,6 +467,13 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
     },
     removeCardFromPokerTable: function removeCardFromPokerTable(cardName) {
       dispatch((0, _actions.removeCardFromPokerTable)(cardName));
+    },
+    calculateStatistics: function calculateStatistics() {
+      fetch('https://dreamerrr.me/poker_calculator/count').then(function (response) {
+        response.json().then(function (pokerStatistics) {
+          return dispatch((0, _actions.calculateStatistics)(pokerStatistics));
+        });
+      });
     }
   };
 };
@@ -658,6 +676,8 @@ var _App2 = _interopRequireDefault(_App);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+require('es6-promise').polyfill();
+
 var store = (0, _redux.createStore)(_reducer2.default);
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -744,6 +764,10 @@ exports.default = function () {
         return {
           v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
         };
+      case 'ADD_POKER_STATISTICS':
+        return {
+          v: Object.assign({}, state, { pokerStatistics: action.pokerStatistics })
+        };
       default:
         return {
           v: state
@@ -771,7 +795,8 @@ var initialState = {
     'XF9': 'XF9', 'XS9': 'XS9',
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   },
-  chosenCards: []
+  chosenCards: [],
+  pokerStatistics: { 'pow': 'pow' }
 };
 });
 

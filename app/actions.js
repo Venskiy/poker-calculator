@@ -17,3 +17,8 @@ export const removeCardFromPokerTable = (cardName) => ({
   type: 'REMOVE_CARD_FROM_POKER_TABLE',
   cardName
 });
+
+export const calculateStatistics = (pokerStatistics) => ({
+  type: 'ADD_POKER_STATISTICS',
+  pokerStatistics
+});

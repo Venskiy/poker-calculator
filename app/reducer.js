@@ -15,7 +15,8 @@ const initialState = {
     'XF9': 'XF9', 'XS9': 'XS9',
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   },
-  chosenCards: []
+  chosenCards: [],
+  pokerStatistics: {'pow': 'pow'}
 };
 
 export default function(state = initialState, action) {
@@ -46,6 +47,8 @@ export default function(state = initialState, action) {
       }
       chosenCards = state.chosenCards.filter(card => card !== cardName);
       return Object.assign({}, state, {selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
+    case 'ADD_POKER_STATISTICS':
+      return Object.assign({}, state, {pokerStatistics: action.pokerStatistics});
     default:
       return state;
   }

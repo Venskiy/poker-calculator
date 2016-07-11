@@ -189,6 +189,12 @@ var calculateStatistics = exports.calculateStatistics = function calculateStatis
     pokerStatistics: pokerStatistics
   };
 };
+
+var reset = exports.reset = function reset() {
+  return {
+    type: 'RESET'
+  };
+};
 });
 
 require.register("components/Board.jsx", function(exports, require, module) {
@@ -491,13 +497,6 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
     },
     removeCardFromPokerTable: function removeCardFromPokerTable(cardName) {
       dispatch((0, _actions.removeCardFromPokerTable)(cardName));
-    },
-    calculateStatistics: function calculateStatistics() {
-      fetch('https://dreamerrr.me/poker_calculator/count').then(function (response) {
-        response.json().then(function (pokerStatistics) {
-          return dispatch((0, _actions.calculateStatistics)(pokerStatistics));
-        });
-      });
     }
   };
 };
@@ -583,6 +582,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var Options = function Options(_ref) {
   var playersAmount = _ref.playersAmount;
   var onPlayersAmountChange = _ref.onPlayersAmountChange;
+  var calculateStatistics = _ref.calculateStatistics;
+  var reset = _ref.reset;
 
   return _react2.default.createElement(
     'div',
@@ -590,16 +591,10 @@ var Options = function Options(_ref) {
     _react2.default.createElement(
       'div',
       { className: 'PlayersAmount' },
-      _react2.default.createElement(
-        'div',
-        null,
-        'Select the amount of players: '
-      ),
-      _react2.default.createElement(
-        'div',
-        null,
-        _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount })
-      )
+      'Select the amount of players:',
+      _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount }),
+      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Count statistcs', onClick: calculateStatistics }),
+      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Reset', onClick: reset })
     )
   );
 };
@@ -614,6 +609,17 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
     onPlayersAmountChange: function onPlayersAmountChange(playersAmount) {
       dispatch((0, _actions.setPlayersAmount)(playersAmount));
+    },
+    calculateStatistics: function calculateStatistics() {
+      fetch('https://dreamerrr.me/poker_calculator/count').then(function (response) {
+        response.json().then(function (pokerStatistics) {
+          return dispatch((0, _actions.calculateStatistics)(pokerStatistics));
+        });
+      });
+    },
+    reset: function reset() {
+      alert('pow');
+      dispatch((0, _actions.reset)());
     }
   };
 };
@@ -734,8 +740,6 @@ var _App2 = _interopRequireDefault(_App);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-require('es6-promise').polyfill();
-
 var store = (0, _redux.createStore)(_reducer2.default);
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -826,6 +830,11 @@ exports.default = function () {
         return {
           v: Object.assign({}, state, { pokerStatistics: action.pokerStatistics })
         };
+      case 'RESET':
+        console.log(initialState);
+        return {
+          v: Object.assign({}, initialState)
+        };
       default:
         return {
           v: state
@@ -854,7 +863,7 @@ var initialState = {
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   },
   chosenCards: [],
-  pokerStatistics: { 'pow': 'pow' }
+  pokerStatistics: {}
 };
 });
 

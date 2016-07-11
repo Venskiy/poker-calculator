@@ -16,7 +16,7 @@ const initialState = {
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   },
   chosenCards: [],
-  pokerStatistics: {'pow': 'pow'}
+  pokerStatistics: {}
 };
 
 export default function(state = initialState, action) {
@@ -49,6 +49,9 @@ export default function(state = initialState, action) {
       return Object.assign({}, state, {selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
     case 'ADD_POKER_STATISTICS':
       return Object.assign({}, state, {pokerStatistics: action.pokerStatistics});
+    case 'RESET':
+      console.log(initialState);
+      return Object.assign({}, initialState);
     default:
       return state;
   }

@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {selectCard, addCardToPokerTable, removeCardFromPokerTable, calculateStatistics} from 'actions';
+import {selectCard, addCardToPokerTable, removeCardFromPokerTable} from 'actions';
 
 import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';
@@ -40,12 +40,6 @@ const mapDispatchToProps = (dispatch) => ({
 
   removeCardFromPokerTable(cardName) {
     dispatch(removeCardFromPokerTable(cardName));
-  },
-
-  calculateStatistics() {
-    fetch('https://dreamerrr.me/poker_calculator/count').then(response => {
-      response.json().then(pokerStatistics => dispatch(calculateStatistics(pokerStatistics)));
-    });
   }
 });
 

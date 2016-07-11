@@ -22,3 +22,7 @@ export const calculateStatistics = (pokerStatistics) => ({
   type: 'ADD_POKER_STATISTICS',
   pokerStatistics
 });
+
+export const reset = () => ({
+  type: 'RESET'
+});

@@ -195,6 +195,14 @@ var reset = exports.reset = function reset() {
     type: 'RESET'
   };
 };
+
+var changePlayerName = exports.changePlayerName = function changePlayerName(playerId, playerName) {
+  return {
+    type: 'CHANGE_PLAYER_NAME',
+    playerId: playerId,
+    playerName: playerName
+  };
+};
 });
 
 require.register("components/Board.jsx", function(exports, require, module) {
@@ -340,7 +348,39 @@ exports.default = function (_ref) {
 };
 });
 
-;require.register("components/PlayersAmount.jsx", function(exports, require, module) {
+;require.register("components/PlayerName.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = _react2.default.createClass({
+  displayName: "PlayerName",
+
+  propTypes: {
+    playerId: _react2.default.PropTypes.number.isRequired,
+    playerName: _react2.default.PropTypes.string.isRequired,
+    onChangePlayerName: _react2.default.PropTypes.func.isRequired
+  },
+
+  handeOnChange: function handeOnChange(playerName) {
+    var name = this.refs.playerName.value;
+    this.props.onChangePlayerName(this.props.playerId, name);
+  },
+  render: function render() {
+    return _react2.default.createElement("input", { ref: "playerName", type: "text", value: this.props.playerName, onChange: this.handeOnChange });
+  }
+});
+});
+
+require.register("components/PlayersAmount.jsx", function(exports, require, module) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -577,13 +617,23 @@ var _PlayersAmount = require('components/PlayersAmount');
 
 var _PlayersAmount2 = _interopRequireDefault(_PlayersAmount);
 
+var _PlayerName = require('components/PlayerName');
+
+var _PlayerName2 = _interopRequireDefault(_PlayerName);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var Options = function Options(_ref) {
   var playersAmount = _ref.playersAmount;
+  var playerNames = _ref.playerNames;
   var onPlayersAmountChange = _ref.onPlayersAmountChange;
   var calculateStatistics = _ref.calculateStatistics;
   var reset = _ref.reset;
+  var onChangePlayerName = _ref.onChangePlayerName;
+
+  var amount = parseInt(playersAmount, 10);
 
   return _react2.default.createElement(
     'div',
@@ -594,14 +644,18 @@ var Options = function Options(_ref) {
       'Select the amount of players:',
       _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount }),
       _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Count statistcs', onClick: calculateStatistics }),
-      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Reset', onClick: reset })
+      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Reset', onClick: reset }),
+      [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
+        return _react2.default.createElement(_PlayerName2.default, { playerId: i, playerName: playerNames[i], onChangePlayerName: onChangePlayerName });
+      })
     )
   );
 };
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    playersAmount: state.playersAmount
+    playersAmount: state.playersAmount,
+    playerNames: state.playerNames
   };
 };
 
@@ -618,8 +672,10 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
       });
     },
     reset: function reset() {
-      alert('pow');
       dispatch((0, _actions.reset)());
+    },
+    onChangePlayerName: function onChangePlayerName(playerId, playerName) {
+      dispatch((0, _actions.changePlayerName)(playerId, playerName));
     }
   };
 };
@@ -831,9 +887,14 @@ exports.default = function () {
           v: Object.assign({}, state, { pokerStatistics: action.pokerStatistics })
         };
       case 'RESET':
-        console.log(initialState);
         return {
-          v: Object.assign({}, initialState)
+          v: Object.assign({}, initialState, { chosenCards: [] })
+        };
+      case 'CHANGE_PLAYER_NAME':
+        playerNames = state.playerNames;
+        playerNames[action.playerId] = action.playerName;
+        return {
+          v: Object.assign({}, state, { playerNames: playerNames })
         };
       default:
         return {
@@ -849,6 +910,7 @@ var _changeSelection = require('utils/changeSelection');
 
 var initialState = {
   playersAmount: 1,
+  playerNames: ['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6', 'Player7', 'Player8', 'Player9'],
   selectedCard: 'XF1',
   pokerTableCards: {
     'XF1': 'XF1', 'XS1': 'XS1',

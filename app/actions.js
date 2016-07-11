@@ -26,3 +26,9 @@ export const calculateStatistics = (pokerStatistics) => ({
 export const reset = () => ({
   type: 'RESET'
 });
+
+export const changePlayerName = (playerId, playerName) => ({
+  type: 'CHANGE_PLAYER_NAME',
+  playerId,
+  playerName
+});

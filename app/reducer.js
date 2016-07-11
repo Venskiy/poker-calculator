@@ -2,6 +2,7 @@ import {changeSelection} from 'utils/changeSelection';
 
 const initialState = {
   playersAmount: 1,
+  playerNames: ['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6', 'Player7', 'Player8', 'Player9'],
   selectedCard: 'XF1',
   pokerTableCards: {
     'XF1': 'XF1', 'XS1': 'XS1',
@@ -50,8 +51,11 @@ export default function(state = initialState, action) {
     case 'ADD_POKER_STATISTICS':
       return Object.assign({}, state, {pokerStatistics: action.pokerStatistics});
     case 'RESET':
-      console.log(initialState);
-      return Object.assign({}, initialState);
+      return Object.assign({}, initialState, {chosenCards: []});
+    case 'CHANGE_PLAYER_NAME':
+      playerNames = state.playerNames;
+      playerNames[action.playerId] = action.playerName;
+      return Object.assign({}, state, {playerNames: playerNames});
     default:
       return state;
   }

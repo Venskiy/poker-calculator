@@ -265,6 +265,28 @@ exports.default = _react2.default.createClass({
 });
 });
 
+require.register("components/Histogram.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    "div",
+    { className: "Histogram" },
+    "Histogram"
+  );
+};
+});
+
 require.register("components/Player.jsx", function(exports, require, module) {
 'use strict';
 
@@ -325,7 +347,7 @@ var _react2 = _interopRequireDefault(_react);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var playersAmount = [2, 3, 4, 5, 6, 7, 8, 9];
+var playersAmount = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 exports.default = _react2.default.createClass({
   displayName: "PlayersAmount",
@@ -424,13 +446,15 @@ var _Options = require('./Options');
 
 var _Options2 = _interopRequireDefault(_Options);
 
+var _Statistics = require('./Statistics');
+
+var _Statistics2 = _interopRequireDefault(_Statistics);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var App = _react2.default.createClass({
   displayName: 'App',
   render: function render() {
-    console.log(this.props.pokerStatistics);
-
     return _react2.default.createElement(
       'div',
       { className: 'Container' },
@@ -444,7 +468,7 @@ var App = _react2.default.createClass({
         'div',
         { className: 'OptionsAndStatistics' },
         _react2.default.createElement(_Options2.default, null),
-        _react2.default.createElement('button', { onClick: this.props.calculateStatistics })
+        _react2.default.createElement(_Statistics2.default, null)
       )
     );
   }
@@ -651,6 +675,40 @@ var mapStateToProps = function mapStateToProps(state) {
 exports.default = (0, _reactRedux.connect)(mapStateToProps)(PokerTable);
 });
 
+require.register("container/Statistics.jsx", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _Histogram = require('components/Histogram');
+
+var _Histogram2 = _interopRequireDefault(_Histogram);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    'div',
+    { className: 'Statistics' },
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null),
+    _react2.default.createElement(_Histogram2.default, null)
+  );
+};
+});
+
 require.register("initialize.js", function(exports, require, module) {
 'use strict';
 
@@ -781,7 +839,7 @@ exports.default = function () {
 var _changeSelection = require('utils/changeSelection');
 
 var initialState = {
-  playersAmount: 2,
+  playersAmount: 1,
   selectedCard: 'XF1',
   pokerTableCards: {
     'XF1': 'XF1', 'XS1': 'XS1',

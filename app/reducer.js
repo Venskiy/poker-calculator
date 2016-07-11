@@ -1,7 +1,7 @@
 import {changeSelection} from 'utils/changeSelection';
 
 const initialState = {
-  playersAmount: 2,
+  playersAmount: 1,
   selectedCard: 'XF1',
   pokerTableCards: {
     'XF1': 'XF1', 'XS1': 'XS1',

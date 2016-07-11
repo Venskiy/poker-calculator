@@ -5,11 +5,10 @@ import {selectCard, addCardToPokerTable, removeCardFromPokerTable, calculateStat
 import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';
 import Options from './Options';
+import Statistics from './Statistics';
 
 const App = React.createClass({
   render() {
-    console.log(this.props.pokerStatistics);
-
     return (
       <div className="Container">
         <div className="CardsAndTable">
@@ -18,7 +17,7 @@ const App = React.createClass({
         </div>
         <div className="OptionsAndStatistics">
           <Options />
-          <button onClick={this.props.calculateStatistics} />
+          <Statistics />
         </div>
       </div>
     );

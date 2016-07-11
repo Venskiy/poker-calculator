@@ -2,9 +2,8 @@ import React from 'react';
 
 import PokerTableCard from './PokerTableCard';
 
-export default ({number, pokerTableCards, selectedCard, onSelectCard, removeCard}) => {
+export default ({number, playerName, pokerTableCards, selectedCard, onSelectCard, removeCard}) => {
   const className = `Player-${number}`;
-  const playerName = `Player${number}`;
   const cardNameFirst = pokerTableCards[`XF${number}`];
   const cardNameSecond = pokerTableCards[`XS${number}`];
 

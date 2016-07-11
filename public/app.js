@@ -320,13 +320,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 exports.default = function (_ref) {
   var number = _ref.number;
+  var playerName = _ref.playerName;
   var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
   var removeCard = _ref.removeCard;
 
   var className = 'Player-' + number;
-  var playerName = 'Player' + number;
   var cardNameFirst = pokerTableCards['XF' + number];
   var cardNameSecond = pokerTableCards['XS' + number];
 
@@ -710,6 +710,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 var PokerTable = function PokerTable(_ref) {
   var playersAmount = _ref.playersAmount;
+  var playerNames = _ref.playerNames;
   var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
@@ -721,7 +722,7 @@ var PokerTable = function PokerTable(_ref) {
     'div',
     { className: 'PokerTable' },
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Player2.default, { number: i + 1, pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable });
+      return _react2.default.createElement(_Player2.default, { number: i + 1, playerName: playerNames[i], pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable });
     }),
     _react2.default.createElement(_Board2.default, { pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable })
   );
@@ -730,6 +731,7 @@ var PokerTable = function PokerTable(_ref) {
 var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.playersAmount,
+    playerNames: state.playerNames,
     pokerTableCards: state.pokerTableCards
   };
 };
@@ -891,7 +893,7 @@ exports.default = function () {
           v: Object.assign({}, initialState, { chosenCards: [] })
         };
       case 'CHANGE_PLAYER_NAME':
-        playerNames = state.playerNames;
+        var playerNames = Object.assign([], state.playerNames);
         playerNames[action.playerId] = action.playerName;
         return {
           v: Object.assign({}, state, { playerNames: playerNames })

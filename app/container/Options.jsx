@@ -43,7 +43,6 @@ const mapDispatchToProps = (dispatch) => ({
 
   onChangePlayerName(playerId, playerName) {
     dispatch(changePlayerName(playerId, playerName));
-
   }
 });
 

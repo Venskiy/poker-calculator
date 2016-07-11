@@ -35,7 +35,7 @@ export default function(state = initialState, action) {
       selectedCard = changeSelection(pokerTableCards);
       chosenCards = state.chosenCards;
       chosenCards.push(action.cardName);
-      return Object.assign({}, state, {selectedCard:selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
+      return Object.assign({}, state, {selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
     case 'REMOVE_CARD_FROM_POKER_TABLE':
       const cardName = action.cardName;
       pokerTableCards = Object.assign({}, state.pokerTableCards);
@@ -53,7 +53,7 @@ export default function(state = initialState, action) {
     case 'RESET':
       return Object.assign({}, initialState, {chosenCards: []});
     case 'CHANGE_PLAYER_NAME':
-      playerNames = state.playerNames;
+      const playerNames = Object.assign([], state.playerNames);
       playerNames[action.playerId] = action.playerName;
       return Object.assign({}, state, {playerNames: playerNames});
     default:

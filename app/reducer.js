@@ -48,14 +48,14 @@ export default function(state = initialState, action) {
       }
       chosenCards = state.chosenCards.filter(card => card !== cardName);
       return Object.assign({}, state, {selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards});
-    case 'ADD_POKER_STATISTICS':
-      return Object.assign({}, state, {pokerStatistics: action.pokerStatistics});
     case 'RESET':
       return Object.assign({}, initialState, {chosenCards: []});
     case 'CHANGE_PLAYER_NAME':
       const playerNames = Object.assign([], state.playerNames);
       playerNames[action.playerId] = action.playerName;
       return Object.assign({}, state, {playerNames: playerNames});
+    case 'ADD_POKER_STATISTICS':
+      return Object.assign({}, state, {pokerStatistics: action.pokerStatistics});
     default:
       return state;
   }

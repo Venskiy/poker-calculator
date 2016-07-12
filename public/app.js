@@ -155,6 +155,10 @@ require.register("actions.js", function(exports, require, module) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.addPokerStatistics = exports.changePlayerName = exports.reset = exports.removeCardFromPokerTable = exports.addCardToPokerTable = exports.selectCard = exports.setPlayersAmount = undefined;
+
+var _calculatePokerStatistics = require('utils/calculatePokerStatistics');
+
 var setPlayersAmount = exports.setPlayersAmount = function setPlayersAmount(playersAmount) {
   return {
     type: 'SET_PLAYERS_AMOUNT',
@@ -183,13 +187,6 @@ var removeCardFromPokerTable = exports.removeCardFromPokerTable = function remov
   };
 };
 
-var calculateStatistics = exports.calculateStatistics = function calculateStatistics(pokerStatistics) {
-  return {
-    type: 'ADD_POKER_STATISTICS',
-    pokerStatistics: pokerStatistics
-  };
-};
-
 var reset = exports.reset = function reset() {
   return {
     type: 'RESET'
@@ -201,6 +198,14 @@ var changePlayerName = exports.changePlayerName = function changePlayerName(play
     type: 'CHANGE_PLAYER_NAME',
     playerId: playerId,
     playerName: playerName
+  };
+};
+
+var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
+  return function (dispatch) {
+    (0, _calculatePokerStatistics.calculatePokerStatistics)().then(function (pokerStatistics) {
+      dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
+    });
   };
 };
 });
@@ -702,12 +707,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var Options = function Options(_ref) {
+  var pokerStatistics = _ref.pokerStatistics;
   var playersAmount = _ref.playersAmount;
   var playerNames = _ref.playerNames;
   var onPlayersAmountChange = _ref.onPlayersAmountChange;
-  var calculateStatistics = _ref.calculateStatistics;
   var reset = _ref.reset;
   var onChangePlayerName = _ref.onChangePlayerName;
+  var addStatistics = _ref.addStatistics;
 
   var amount = parseInt(playersAmount, 10);
 
@@ -719,7 +725,7 @@ var Options = function Options(_ref) {
       { className: 'PlayersAmount' },
       'Select the amount of players:',
       _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount }),
-      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Count statistcs', onClick: calculateStatistics }),
+      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Count statistcs', onClick: addStatistics }),
       _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Reset', onClick: reset }),
       [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
         return _react2.default.createElement(_PlayerName2.default, { playerId: i, playerName: playerNames[i], onChangePlayerName: onChangePlayerName });
@@ -731,27 +737,24 @@ var Options = function Options(_ref) {
 var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.playersAmount,
-    playerNames: state.playerNames
+    playerNames: state.playerNames,
+    pokerStatistics: state.pokerStatistics
   };
 };
 
-var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+var mapDispatchToProps = function mapDispatchToProps(dispatch, state) {
   return {
     onPlayersAmountChange: function onPlayersAmountChange(playersAmount) {
       dispatch((0, _actions.setPlayersAmount)(playersAmount));
-    },
-    calculateStatistics: function calculateStatistics() {
-      fetch('https://dreamerrr.me/poker_calculator/count').then(function (response) {
-        response.json().then(function (pokerStatistics) {
-          return dispatch((0, _actions.calculateStatistics)(pokerStatistics));
-        });
-      });
     },
     reset: function reset() {
       dispatch((0, _actions.reset)());
     },
     onChangePlayerName: function onChangePlayerName(playerId, playerName) {
       dispatch((0, _actions.changePlayerName)(playerId, playerName));
+    },
+    addStatistics: function addStatistics() {
+      dispatch((0, _actions.addPokerStatistics)());
     }
   };
 };
@@ -867,6 +870,10 @@ var _react2 = _interopRequireDefault(_react);
 
 var _redux = require('redux');
 
+var _reduxThunk = require('redux-thunk');
+
+var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
+
 var _reactRedux = require('react-redux');
 
 var _reducer = require('reducer');
@@ -879,7 +886,9 @@ var _App2 = _interopRequireDefault(_App);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var store = (0, _redux.createStore)(_reducer2.default);
+require('es6-promise').polyfill();
+
+var store = (0, _redux.createStore)(_reducer2.default, (0, _redux.applyMiddleware)(_reduxThunk2.default));
 
 document.addEventListener('DOMContentLoaded', function () {
   _reactDom2.default.render(_react2.default.createElement(
@@ -965,10 +974,6 @@ exports.default = function () {
         return {
           v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
         };
-      case 'ADD_POKER_STATISTICS':
-        return {
-          v: Object.assign({}, state, { pokerStatistics: action.pokerStatistics })
-        };
       case 'RESET':
         return {
           v: Object.assign({}, initialState, { chosenCards: [] })
@@ -978,6 +983,10 @@ exports.default = function () {
         playerNames[action.playerId] = action.playerName;
         return {
           v: Object.assign({}, state, { playerNames: playerNames })
+        };
+      case 'ADD_POKER_STATISTICS':
+        return {
+          v: Object.assign({}, state, { pokerStatistics: action.pokerStatistics })
         };
       default:
         return {
@@ -1012,7 +1021,29 @@ var initialState = {
 };
 });
 
-;require.register("utils/cards.js", function(exports, require, module) {
+;require.register("utils/calculatePokerStatistics.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var calculatePokerStatistics = exports.calculatePokerStatistics = function calculatePokerStatistics() {
+  return new Promise(function (resolve, reject) {
+    fetch('https://dreamerrr.me/poker_calculator/count', {
+      method: 'post',
+      body: JSON.stringify({
+        pow: 'pow'
+      })
+    }).then(function (response) {
+      response.json().then(function (pokerStatistics) {
+        return resolve(pokerStatistics);
+      });
+    });
+  });
+};
+});
+
+require.register("utils/cards.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

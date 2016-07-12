@@ -1,18 +1,18 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {setPlayersAmount, calculateStatistics, reset, changePlayerName} from 'actions';
+import {setPlayersAmount, reset, changePlayerName, addPokerStatistics} from 'actions';
 
 import PlayersAmount from 'components/PlayersAmount';
 import PlayerName from 'components/PlayerName';
 
-const Options = ({playersAmount, playerNames, onPlayersAmountChange, calculateStatistics, reset, onChangePlayerName}) => {
+const Options = ({pokerStatistics, playersAmount, playerNames, onPlayersAmountChange, reset, onChangePlayerName, addStatistics}) => {
   const amount = parseInt(playersAmount, 10);
 
   return <div className="Options">
     <div className="PlayersAmount">
       Select the amount of players:
       <PlayersAmount onPlayersAmountChange={onPlayersAmountChange} playersAmount={playersAmount} />
-      <input className="btn btn-primary" type="button" value="Count statistcs" onClick={calculateStatistics} />
+      <input className="btn btn-primary" type="button" value="Count statistcs" onClick={addStatistics} />
       <input className="btn btn-primary" type="button" value="Reset" onClick={reset} />
       {[...Array(amount)].map((x, i) =>
         <PlayerName playerId={i} playerName={playerNames[i]} onChangePlayerName={onChangePlayerName} />
@@ -23,18 +23,13 @@ const Options = ({playersAmount, playerNames, onPlayersAmountChange, calculateSt
 
 const mapStateToProps = (state) => ({
   playersAmount: state.playersAmount,
-  playerNames: state.playerNames
+  playerNames: state.playerNames,
+  pokerStatistics: state.pokerStatistics
 });
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch, state) => ({
   onPlayersAmountChange(playersAmount) {
     dispatch(setPlayersAmount(playersAmount));
-  },
-
-  calculateStatistics() {
-    fetch('https://dreamerrr.me/poker_calculator/count').then(response => {
-      response.json().then(pokerStatistics => dispatch(calculateStatistics(pokerStatistics)));
-    });
   },
 
   reset() {
@@ -43,6 +38,10 @@ const mapDispatchToProps = (dispatch) => ({
 
   onChangePlayerName(playerId, playerName) {
     dispatch(changePlayerName(playerId, playerName));
+  },
+
+  addStatistics() {
+    dispatch(addPokerStatistics());
   }
 });
 

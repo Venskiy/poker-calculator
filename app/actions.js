@@ -1,3 +1,5 @@
+import {calculatePokerStatistics} from 'utils/calculatePokerStatistics';
+
 export const setPlayersAmount = (playersAmount) => ({
   type: 'SET_PLAYERS_AMOUNT',
   playersAmount
@@ -18,11 +20,6 @@ export const removeCardFromPokerTable = (cardName) => ({
   cardName
 });
 
-export const calculateStatistics = (pokerStatistics) => ({
-  type: 'ADD_POKER_STATISTICS',
-  pokerStatistics
-});
-
 export const reset = () => ({
   type: 'RESET'
 });
@@ -32,3 +29,11 @@ export const changePlayerName = (playerId, playerName) => ({
   playerId,
   playerName
 });
+
+export const addPokerStatistics = () => {
+  return dispatch => {
+    calculatePokerStatistics().then(pokerStatistics => {
+      dispatch({type: 'ADD_POKER_STATISTICS', pokerStatistics});
+    });
+  };
+};

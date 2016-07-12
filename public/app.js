@@ -279,6 +279,82 @@ exports.default = _react2.default.createClass({
 });
 });
 
+require.register("components/Combinations.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    "div",
+    { className: "Combinations" },
+    _react2.default.createElement(
+      "div",
+      null,
+      "Combinations"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "High Card"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Pair"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Two Pairs"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Three of a Kind"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Straight"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Flush"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Full House"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Four of a Kind"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Straight Flush"
+    ),
+    _react2.default.createElement(
+      "div",
+      null,
+      "Royal Flush"
+    )
+  );
+};
+});
+
 require.register("components/Histogram.jsx", function(exports, require, module) {
 "use strict";
 
@@ -754,12 +830,17 @@ var _Histogram = require('components/Histogram');
 
 var _Histogram2 = _interopRequireDefault(_Histogram);
 
+var _Combinations = require('components/Combinations');
+
+var _Combinations2 = _interopRequireDefault(_Combinations);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = function () {
   return _react2.default.createElement(
     'div',
     { className: 'Statistics' },
+    _react2.default.createElement(_Combinations2.default, null),
     _react2.default.createElement(_Histogram2.default, null),
     _react2.default.createElement(_Histogram2.default, null),
     _react2.default.createElement(_Histogram2.default, null),

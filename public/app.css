@@ -158,5 +158,10 @@ body {
   flex: 0 0 100px;
   border: 1px solid yellow; }
 
+/* line 190, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Combinations {
+  flex: 0 0 120px;
+  border: 1px solid green; }
+
 
 /*# sourceMappingURL=app.css.map*/

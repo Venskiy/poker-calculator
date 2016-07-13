@@ -10,10 +10,14 @@ const Options = ({pokerStatistics, playersAmount, playerNames, onPlayersAmountCh
 
   return <div className="Options">
     <div className="PlayersAmount">
-      Select the amount of players:
-      <PlayersAmount onPlayersAmountChange={onPlayersAmountChange} playersAmount={playersAmount} />
-      <input className="btn btn-primary" type="button" value="Count statistcs" onClick={addStatistics} />
-      <input className="btn btn-primary" type="button" value="Reset" onClick={reset} />
+      <div className="SelectText">Select the amount of players:</div>
+      <div className="CustomSelect">
+        <PlayersAmount onPlayersAmountChange={onPlayersAmountChange} playersAmount={playersAmount} />
+      </div>
+    </div>
+    <input className="CustomButton" type="button" value="Count statistcs" onClick={addStatistics} />
+    <input className="CustomButton" type="button" value="Reset" onClick={reset} />
+    <div className="ChangeNameArea">
       {[...Array(amount)].map((x, i) =>
         <PlayerName playerId={i} playerName={playerNames[i]} onChangePlayerName={onChangePlayerName} />
       )}

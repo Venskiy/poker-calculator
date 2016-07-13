@@ -4,19 +4,20 @@ import {connect} from 'react-redux';
 import Histogram from 'components/Histogram';
 import Combinations from 'components/Combinations';
 
-const Statistics = ({playersAmount, histograms}) => {
+const Statistics = ({playersAmount, playerNames, histograms}) => {
   const amount = parseInt(playersAmount, 10);
 
   return <div className="Statistics">
     <Combinations />
     {[...Array(amount)].map((x, i) =>
-      <Histogram histogram={histograms[i]} />
+      <Histogram playerName={playerNames[i]} histogram={histograms[i]} />
     )}
   </div>
 };
 
 const mapStateToProps = (state) => ({
   playersAmount: state.playersAmount,
+  playerNames: state.playerNames,
   histograms: state.histograms
 });
 

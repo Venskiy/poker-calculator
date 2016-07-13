@@ -142,26 +142,100 @@ body {
 
 /* line 172, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Options {
-  flex: 0 0 300px;
-  border: 1px solid black; }
+  flex: 0 0 280px; }
 
-/* line 177, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 176, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.PlayersAmount {
+  margin: 7px; }
+
+/* line 180, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.SelectText {
+  float: left;
+  font-size: 20px; }
+
+/* line 185, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.CustomSelect {
+  padding: 0;
+  margin: 0;
+  border: 1px solid #ccc;
+  width: 30px;
+  border-radius: 3px;
+  overflow: hidden;
+  background-color: #fff;
+  background: #fff url("http://www.scottgood.com/jsg/blog.nsf/images/arrowdown.gif") no-repeat 90% 50%; }
+  /* line 195, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .CustomSelect select {
+    padding: 5px 8px;
+    width: 130%;
+    border: none;
+    box-shadow: none;
+    background-color: transparent;
+    background-image: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none; }
+  /* line 207, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .CustomSelect select:focus {
+    outline: none; }
+
+/* line 212, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.CustomButton {
+  border-radius: 24px;
+  font-family: Arial;
+  color: #000000;
+  font-size: 16px;
+  background: #ffffff;
+  padding: 7px 26px 7px 26px;
+  margin: 5px;
+  border: solid #000000 1px;
+  text-decoration: none; }
+  /* line 223, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .CustomButton:hover {
+    background: #d6dee3;
+    text-decoration: none; }
+  /* line 228, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .CustomButton:focus {
+    outline: none; }
+
+/* line 234, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.ChangeNameArea input {
+  border-radius: 5px;
+  border: 1px solid #333;
+  padding: 2px;
+  margin: 2px; }
+  /* line 240, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .ChangeNameArea input:focus {
+    outline: none; }
+
+/* line 246, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Statistics {
   flex: 0 0 1050px;
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  border: 1px solid pink; }
+  justify-content: flex-start; }
 
-/* line 185, /home/ilya/dev/poker-calculator/app/style/app.scss */
-.Histogram {
-  flex: 0 0 100px;
-  border: 1px solid yellow; }
-
-/* line 190, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 253, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Combinations {
   flex: 0 0 120px;
-  border: 1px solid green; }
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; }
+  /* line 259, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Combinations div {
+    text-align: center;
+    border: 1px solid black; }
+
+/* line 265, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Histogram {
+  flex: 0 0 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 3px; }
+  /* line 272, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Histogram div {
+    text-align: center;
+    border: 1px solid black; }
 
 
 /*# sourceMappingURL=app.css.map*/

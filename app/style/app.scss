@@ -170,24 +170,107 @@ body {
 }
 
 .Options {
-  flex: 0 0 300px;
-  border: 1px solid black;
+  flex: 0 0 280px;
+}
+
+.PlayersAmount {
+  margin: 7px;
+}
+
+.SelectText {
+  float: left;
+  font-size: 20px;
+}
+
+.CustomSelect {
+  padding: 0;
+  margin: 0;
+  border: 1px solid #ccc;
+  width: 30px;
+  border-radius: 3px;
+  overflow: hidden;
+  background-color: #fff;
+  background: #fff url("http://www.scottgood.com/jsg/blog.nsf/images/arrowdown.gif") no-repeat 90% 50%;
+
+  select {
+    padding: 5px 8px;
+    width: 130%;
+    border: none;
+    box-shadow: none;
+    background-color: transparent;
+    background-image: none;
+    -webkit-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
+  }
+
+  select:focus {
+    outline: none;
+  }
+}
+
+.CustomButton {
+  border-radius: 24px;
+  font-family: Arial;
+  color: #000000;
+  font-size: 16px;
+  background: #ffffff;
+  padding: 7px 26px 7px 26px;
+  margin: 5px;
+  border: solid #000000 1px;
+  text-decoration: none;
+
+  &:hover {
+    background: #d6dee3;
+    text-decoration: none;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.ChangeNameArea {
+  input {
+    border-radius: 5px;
+    border: 1px solid #333;
+    padding: 2px;
+    margin: 2px;
+
+    &:focus {
+      outline: none;
+    }
+  }
 }
 
 .Statistics {
   flex: 0 0 1050px;
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  border: 1px solid pink;
-}
-
-.Histogram {
-  flex: 0 0 100px;
-  border: 1px solid yellow;
+  justify-content: flex-start;
 }
 
 .Combinations {
   flex: 0 0 120px;
-  border: 1px solid green;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  div {
+    text-align: center;
+    border: 1px solid black;
+  }
+}
+
+.Histogram {
+  flex: 0 0 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 3px;
+
+  div {
+    text-align: center;
+    border: 1px solid black;
+  }
 }

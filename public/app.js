@@ -379,6 +379,7 @@ exports.default = _react2.default.createClass({
   displayName: 'Histogram',
 
   propTypes: {
+    playerName: _react2.default.PropTypes.string.isRequired,
     histogram: _react2.default.PropTypes.array
   },
 
@@ -388,7 +389,11 @@ exports.default = _react2.default.createClass({
     return _react2.default.createElement(
       'div',
       { className: 'Histogram' },
-      'Histogram',
+      _react2.default.createElement(
+        'div',
+        null,
+        this.props.playerName
+      ),
       [].concat(_toConsumableArray(Array(10))).map(function (x, i) {
         return _react2.default.createElement(
           'div',
@@ -744,10 +749,22 @@ var Options = function Options(_ref) {
     _react2.default.createElement(
       'div',
       { className: 'PlayersAmount' },
-      'Select the amount of players:',
-      _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount }),
-      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Count statistcs', onClick: addStatistics }),
-      _react2.default.createElement('input', { className: 'btn btn-primary', type: 'button', value: 'Reset', onClick: reset }),
+      _react2.default.createElement(
+        'div',
+        { className: 'SelectText' },
+        'Select the amount of players:'
+      ),
+      _react2.default.createElement(
+        'div',
+        { className: 'CustomSelect' },
+        _react2.default.createElement(_PlayersAmount2.default, { onPlayersAmountChange: onPlayersAmountChange, playersAmount: playersAmount })
+      )
+    ),
+    _react2.default.createElement('input', { className: 'CustomButton', type: 'button', value: 'Count statistcs', onClick: addStatistics }),
+    _react2.default.createElement('input', { className: 'CustomButton', type: 'button', value: 'Reset', onClick: reset }),
+    _react2.default.createElement(
+      'div',
+      { className: 'ChangeNameArea' },
       [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
         return _react2.default.createElement(_PlayerName2.default, { playerId: i, playerName: playerNames[i], onChangePlayerName: onChangePlayerName });
       })
@@ -868,6 +885,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 var Statistics = function Statistics(_ref) {
   var playersAmount = _ref.playersAmount;
+  var playerNames = _ref.playerNames;
   var histograms = _ref.histograms;
 
   var amount = parseInt(playersAmount, 10);
@@ -877,7 +895,7 @@ var Statistics = function Statistics(_ref) {
     { className: 'Statistics' },
     _react2.default.createElement(_Combinations2.default, null),
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Histogram2.default, { histogram: histograms[i] });
+      return _react2.default.createElement(_Histogram2.default, { playerName: playerNames[i], histogram: histograms[i] });
     })
   );
 };
@@ -885,6 +903,7 @@ var Statistics = function Statistics(_ref) {
 var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.playersAmount,
+    playerNames: state.playerNames,
     histograms: state.histograms
   };
 };

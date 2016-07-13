@@ -361,25 +361,44 @@ exports.default = function () {
 });
 
 require.register("components/Histogram.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
-  return _react2.default.createElement(
-    "div",
-    { className: "Histogram" },
-    "Histogram"
-  );
-};
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+exports.default = _react2.default.createClass({
+  displayName: 'Histogram',
+
+  propTypes: {
+    histogram: _react2.default.PropTypes.array
+  },
+
+  render: function render() {
+    var _this = this;
+
+    return _react2.default.createElement(
+      'div',
+      { className: 'Histogram' },
+      'Histogram',
+      [].concat(_toConsumableArray(Array(10))).map(function (x, i) {
+        return _react2.default.createElement(
+          'div',
+          null,
+          _this.props.histogram ? _this.props.histogram[i] : '-'
+        );
+      })
+    );
+  }
+});
 });
 
 require.register("components/Player.jsx", function(exports, require, module) {
@@ -833,6 +852,8 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _reactRedux = require('react-redux');
+
 var _Histogram = require('components/Histogram');
 
 var _Histogram2 = _interopRequireDefault(_Histogram);
@@ -843,22 +864,32 @@ var _Combinations2 = _interopRequireDefault(_Combinations);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+var Statistics = function Statistics(_ref) {
+  var playersAmount = _ref.playersAmount;
+  var histograms = _ref.histograms;
+
+  var amount = parseInt(playersAmount, 10);
+
   return _react2.default.createElement(
     'div',
     { className: 'Statistics' },
     _react2.default.createElement(_Combinations2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null),
-    _react2.default.createElement(_Histogram2.default, null)
+    [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
+      return _react2.default.createElement(_Histogram2.default, { histogram: histograms[i] });
+    })
   );
 };
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {
+    playersAmount: state.playersAmount,
+    histograms: state.histograms
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps)(Statistics);
 });
 
 require.register("initialize.js", function(exports, require, module) {

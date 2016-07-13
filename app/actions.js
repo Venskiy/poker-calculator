@@ -31,8 +31,8 @@ export const changePlayerName = (playerId, playerName) => ({
 });
 
 export const addPokerStatistics = () => {
-  return dispatch => {
-    calculatePokerStatistics().then(pokerStatistics => {
+  return (dispatch, getState) => {
+    calculatePokerStatistics(getState().playersAmount, getState().pokerTableCards).then(pokerStatistics => {
       dispatch({type: 'ADD_POKER_STATISTICS', pokerStatistics});
     });
   };

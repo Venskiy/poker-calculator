@@ -27,7 +27,7 @@ const mapStateToProps = (state) => ({
   pokerStatistics: state.pokerStatistics
 });
 
-const mapDispatchToProps = (dispatch, state) => ({
+const mapDispatchToProps = (dispatch) => ({
   onPlayersAmountChange(playersAmount) {
     dispatch(setPlayersAmount(playersAmount));
   },

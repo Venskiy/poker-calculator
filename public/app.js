@@ -202,8 +202,8 @@ var changePlayerName = exports.changePlayerName = function changePlayerName(play
 };
 
 var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
-  return function (dispatch) {
-    (0, _calculatePokerStatistics.calculatePokerStatistics)().then(function (pokerStatistics) {
+  return function (dispatch, getState) {
+    (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().playersAmount, getState().pokerTableCards).then(function (pokerStatistics) {
       dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
     });
   };
@@ -742,7 +742,7 @@ var mapStateToProps = function mapStateToProps(state) {
   };
 };
 
-var mapDispatchToProps = function mapDispatchToProps(dispatch, state) {
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
     onPlayersAmountChange: function onPlayersAmountChange(playersAmount) {
       dispatch((0, _actions.setPlayersAmount)(playersAmount));
@@ -1027,14 +1027,28 @@ var initialState = {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var calculatePokerStatistics = exports.calculatePokerStatistics = function calculatePokerStatistics() {
+var calculatePokerStatistics = exports.calculatePokerStatistics = function calculatePokerStatistics(playersAmount, pokerTableCards) {
+  var playersCards = [];
+  var boardCards = [];
+
+  for (var i = 0; i < playersAmount; ++i) {
+    playersCards.push(pokerTableCards['XF' + (i + 1)]);
+    playersCards.push(pokerTableCards['XS' + (i + 1)]);
+  }
+
+  for (var _i = 0; _i < 5; ++_i) {
+    boardCards.push(pokerTableCards['XB' + (_i + 1)]);
+  }
+
   return new Promise(function (resolve, reject) {
     fetch('https://dreamerrr.me/poker_calculator/count', {
       method: 'post',
       body: JSON.stringify({
-        pow: 'pow'
+        playersCards: playersCards,
+        boardCards: boardCards
       })
     }).then(function (response) {
+      console.log(response);
       response.json().then(function (pokerStatistics) {
         return resolve(pokerStatistics);
       });

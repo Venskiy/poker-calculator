@@ -1,6 +1,7 @@
 import React from 'react';
 import {connect} from 'react-redux';
 import {setPlayersAmount, reset, changePlayerName, addPokerStatistics} from 'actions';
+import toastr from 'toastr';
 
 import PlayersAmount from 'components/PlayersAmount';
 import PlayerName from 'components/PlayerName';
@@ -37,6 +38,7 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   reset() {
+    toastr.error('I do not think that word means what you think it means.', 'Inconceivable!');
     dispatch(reset());
   },
 

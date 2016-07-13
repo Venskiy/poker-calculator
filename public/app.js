@@ -720,6 +720,10 @@ var _reactRedux = require('react-redux');
 
 var _actions = require('actions');
 
+var _toastr = require('toastr');
+
+var _toastr2 = _interopRequireDefault(_toastr);
+
 var _PlayersAmount = require('components/PlayersAmount');
 
 var _PlayersAmount2 = _interopRequireDefault(_PlayersAmount);
@@ -786,6 +790,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
       dispatch((0, _actions.setPlayersAmount)(playersAmount));
     },
     reset: function reset() {
+      _toastr2.default.error('I do not think that word means what you think it means.', 'Inconceivable!');
       dispatch((0, _actions.reset)());
     },
     onChangePlayerName: function onChangePlayerName(playerId, playerName) {
@@ -929,6 +934,10 @@ var _reduxThunk = require('redux-thunk');
 var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
 var _reactRedux = require('react-redux');
+
+require('jquery');
+
+require('toastr');
 
 var _reducer = require('reducer');
 

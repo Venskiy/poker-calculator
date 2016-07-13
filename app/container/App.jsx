@@ -25,8 +25,7 @@ const App = React.createClass({
 });
 
 const mapStateToProps = (state) => ({
-  selectedCard: state.selectedCard,
-  pokerStatistics: state.pokerStatistics
+  selectedCard: state.selectedCard
 });
 
 const mapDispatchToProps = (dispatch) => ({

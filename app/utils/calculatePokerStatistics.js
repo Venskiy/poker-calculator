@@ -8,7 +8,9 @@ export const calculatePokerStatistics = (playersAmount, pokerTableCards) => {
   }
 
   for(let i = 0; i < 5; ++i) {
-    boardCards.push(pokerTableCards[`XB${i + 1}`]);
+    if(!pokerTableCards[`XB${i + 1}`].startsWith('X')) {
+      boardCards.push(pokerTableCards[`XB${i + 1}`]);
+    }
   }
 
   return new Promise((resolve, reject) => {
@@ -19,7 +21,6 @@ export const calculatePokerStatistics = (playersAmount, pokerTableCards) => {
         boardCards: boardCards
       })
     }).then(response => {
-      console.log(response);
       response.json().then(pokerStatistics => resolve(pokerStatistics));
     });
   });

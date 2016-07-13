@@ -17,7 +17,8 @@ const initialState = {
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   },
   chosenCards: [],
-  pokerStatistics: {}
+  winningChances: [],
+  histograms: []
 };
 
 export default function(state = initialState, action) {
@@ -55,7 +56,9 @@ export default function(state = initialState, action) {
       playerNames[action.playerId] = action.playerName;
       return Object.assign({}, state, {playerNames: playerNames});
     case 'ADD_POKER_STATISTICS':
-      return Object.assign({}, state, {pokerStatistics: action.pokerStatistics});
+      const winningChances = Object.assign([], action.pokerStatistics.percentages);
+      const histograms = Object.assign([], action.pokerStatistics.histograms);
+      return Object.assign({}, state, {winningChances:winningChances, histograms: histograms});
     default:
       return state;
   }

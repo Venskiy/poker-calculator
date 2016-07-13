@@ -404,6 +404,7 @@ exports.default = function (_ref) {
   var playerName = _ref.playerName;
   var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
+  var winningChances = _ref.winningChances;
   var onSelectCard = _ref.onSelectCard;
   var removeCard = _ref.removeCard;
 
@@ -423,7 +424,9 @@ exports.default = function (_ref) {
     _react2.default.createElement(
       'div',
       { className: 'PlayerName' },
-      playerName
+      playerName,
+      ' ',
+      winningChances
     )
   );
 };
@@ -603,8 +606,7 @@ var App = _react2.default.createClass({
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    selectedCard: state.selectedCard,
-    pokerStatistics: state.pokerStatistics
+    selectedCard: state.selectedCard
   };
 };
 
@@ -792,6 +794,7 @@ var PokerTable = function PokerTable(_ref) {
   var playerNames = _ref.playerNames;
   var pokerTableCards = _ref.pokerTableCards;
   var selectedCard = _ref.selectedCard;
+  var winningChances = _ref.winningChances;
   var onSelectCard = _ref.onSelectCard;
   var removeCardFromPokerTable = _ref.removeCardFromPokerTable;
 
@@ -801,7 +804,7 @@ var PokerTable = function PokerTable(_ref) {
     'div',
     { className: 'PokerTable' },
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Player2.default, { number: i + 1, playerName: playerNames[i], pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable });
+      return _react2.default.createElement(_Player2.default, { number: i + 1, playerName: playerNames[i], pokerTableCards: pokerTableCards, selectedCard: selectedCard, winningChances: winningChances[i + 1], onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable });
     }),
     _react2.default.createElement(_Board2.default, { pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable })
   );
@@ -811,7 +814,8 @@ var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.playersAmount,
     playerNames: state.playerNames,
-    pokerTableCards: state.pokerTableCards
+    pokerTableCards: state.pokerTableCards,
+    winningChances: state.winningChances
   };
 };
 
@@ -985,8 +989,10 @@ exports.default = function () {
           v: Object.assign({}, state, { playerNames: playerNames })
         };
       case 'ADD_POKER_STATISTICS':
+        var winningChances = Object.assign([], action.pokerStatistics.percentages);
+        var histograms = Object.assign([], action.pokerStatistics.histograms);
         return {
-          v: Object.assign({}, state, { pokerStatistics: action.pokerStatistics })
+          v: Object.assign({}, state, { winningChances: winningChances, histograms: histograms })
         };
       default:
         return {
@@ -1017,7 +1023,8 @@ var initialState = {
     'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
   },
   chosenCards: [],
-  pokerStatistics: {}
+  winningChances: [],
+  histograms: []
 };
 });
 
@@ -1037,7 +1044,9 @@ var calculatePokerStatistics = exports.calculatePokerStatistics = function calcu
   }
 
   for (var _i = 0; _i < 5; ++_i) {
-    boardCards.push(pokerTableCards['XB' + (_i + 1)]);
+    if (!pokerTableCards['XB' + (_i + 1)].startsWith('X')) {
+      boardCards.push(pokerTableCards['XB' + (_i + 1)]);
+    }
   }
 
   return new Promise(function (resolve, reject) {
@@ -1048,7 +1057,6 @@ var calculatePokerStatistics = exports.calculatePokerStatistics = function calcu
         boardCards: boardCards
       })
     }).then(function (response) {
-      console.log(response);
       response.json().then(function (pokerStatistics) {
         return resolve(pokerStatistics);
       });

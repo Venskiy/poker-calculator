@@ -2,10 +2,10 @@ import React from 'react';
 
 import PokerTableCard from './PokerTableCard';
 
-export default ({number, playerName, pokerTableCards, selectedCard, winningChances, onSelectCard, removeCard}) => {
+export default ({number, playerName, cards, selectedCard, winningChances, onSelectCard, removeCard}) => {
   const className = `Player-${number}`;
-  const cardNameFirst = pokerTableCards[`XF${number}`];
-  const cardNameSecond = pokerTableCards[`XS${number}`];
+  const cardNameFirst = cards[`XF${number}`];
+  const cardNameSecond = cards[`XS${number}`];
 
   return <div className={className}>
     <div className="Hand">

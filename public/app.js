@@ -149,67 +149,6 @@ var __makeRelativeRequire = function(require, mappings, pref) {
     return require(name);
   }
 };
-require.register("actions.js", function(exports, require, module) {
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.addPokerStatistics = exports.changePlayerName = exports.reset = exports.removeCardFromPokerTable = exports.addCardToPokerTable = exports.selectCard = exports.setPlayersAmount = undefined;
-
-var _calculatePokerStatistics = require('utils/calculatePokerStatistics');
-
-var setPlayersAmount = exports.setPlayersAmount = function setPlayersAmount(playersAmount) {
-  return {
-    type: 'SET_PLAYERS_AMOUNT',
-    playersAmount: playersAmount
-  };
-};
-
-var selectCard = exports.selectCard = function selectCard(cardName) {
-  return {
-    type: 'SELECT_CARD',
-    cardName: cardName
-  };
-};
-
-var addCardToPokerTable = exports.addCardToPokerTable = function addCardToPokerTable(cardName) {
-  return {
-    type: 'ADD_CARD_TO_POKER_TABLE',
-    cardName: cardName
-  };
-};
-
-var removeCardFromPokerTable = exports.removeCardFromPokerTable = function removeCardFromPokerTable(cardName) {
-  return {
-    type: 'REMOVE_CARD_FROM_POKER_TABLE',
-    cardName: cardName
-  };
-};
-
-var reset = exports.reset = function reset() {
-  return {
-    type: 'RESET'
-  };
-};
-
-var changePlayerName = exports.changePlayerName = function changePlayerName(playerId, playerName) {
-  return {
-    type: 'CHANGE_PLAYER_NAME',
-    playerId: playerId,
-    playerName: playerName
-  };
-};
-
-var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
-  return function (dispatch, getState) {
-    (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().playersAmount, getState().pokerTableCards).then(function (pokerStatistics) {
-      dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
-    });
-  };
-};
-});
-
 require.register("actions/actionTypes.js", function(exports, require, module) {
 "use strict";
 });
@@ -227,16 +166,23 @@ var selectCard = exports.selectCard = function selectCard(cardName) {
   };
 };
 
-var addCardToPokerTable = exports.addCardToPokerTable = function addCardToPokerTable(cardName) {
+var addPokerTableCard = exports.addPokerTableCard = function addPokerTableCard(cardName) {
   return {
-    type: 'ADD_CARD_TO_POKER_TABLE',
+    type: 'ADD_POKER_TABLE_CARD',
     cardName: cardName
   };
 };
 
-var removeCardFromPokerTable = exports.removeCardFromPokerTable = function removeCardFromPokerTable(cardName) {
+var removePlayerCard = exports.removePlayerCard = function removePlayerCard(cardName) {
   return {
-    type: 'REMOVE_CARD_FROM_POKER_TABLE',
+    type: 'REMOVE_PLAYER_CARD',
+    cardName: cardName
+  };
+};
+
+var removeBoardCard = exports.removeBoardCard = function removeBoardCard(cardName) {
+  return {
+    type: 'REMOVE_BOARD_CARD',
     cardName: cardName
   };
 };
@@ -275,7 +221,7 @@ var changePlayerName = exports.changePlayerName = function changePlayerName(play
 
 var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
   return function (dispatch, getState) {
-    (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().playersAmount, getState().pokerTableCards).then(function (pokerStatistics) {
+    (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().options.playersAmount, getState().cards.pokerTableCards).then(function (pokerStatistics) {
       dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
     });
   };
@@ -302,7 +248,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 exports.default = function (_ref) {
-  var pokerTableCards = _ref.pokerTableCards;
+  var cards = _ref.cards;
   var selectedCard = _ref.selectedCard;
   var onSelectCard = _ref.onSelectCard;
   var removeCard = _ref.removeCard;
@@ -311,7 +257,7 @@ exports.default = function (_ref) {
     'div',
     { className: 'Board' },
     [].concat(_toConsumableArray(Array(5))).map(function (x, i) {
-      return _react2.default.createElement(_PokerTableCard2.default, { cardName: pokerTableCards['XB' + (i + 1)], selected: selectedCard, onSelect: onSelectCard, removeCard: removeCard });
+      return _react2.default.createElement(_PokerTableCard2.default, { cardName: cards['XB' + (i + 1)], selected: selectedCard, onSelect: onSelectCard, removeCard: removeCard });
     })
   );
 };
@@ -498,15 +444,15 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 exports.default = function (_ref) {
   var number = _ref.number;
   var playerName = _ref.playerName;
-  var pokerTableCards = _ref.pokerTableCards;
+  var cards = _ref.cards;
   var selectedCard = _ref.selectedCard;
   var winningChances = _ref.winningChances;
   var onSelectCard = _ref.onSelectCard;
   var removeCard = _ref.removeCard;
 
   var className = 'Player-' + number;
-  var cardNameFirst = pokerTableCards['XF' + number];
-  var cardNameSecond = pokerTableCards['XS' + number];
+  var cardNameFirst = cards['XF' + number];
+  var cardNameSecond = cards['XS' + number];
 
   return _react2.default.createElement(
     'div',
@@ -687,7 +633,7 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'CardsAndTable' },
-        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard, addCardToPokerTable: this.props.addCardToPokerTable }),
+        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard, addPokerTableCard: this.props.addPokerTableCard }),
         _react2.default.createElement(_PokerTable2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard, removeCardFromPokerTable: this.props.removeCardFromPokerTable })
       ),
       _react2.default.createElement(
@@ -711,8 +657,8 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
     onSelectCard: function onSelectCard(cardName) {
       dispatch((0, _cardActions.selectCard)(cardName));
     },
-    addCardToPokerTable: function addCardToPokerTable(cardName, selectedCard) {
-      dispatch((0, _cardActions.addCardToPokerTable)(cardName));
+    addPokerTableCard: function addPokerTableCard(cardName) {
+      dispatch((0, _cardActions.addPokerTableCard)(cardName));
     },
     removeCardFromPokerTable: function removeCardFromPokerTable(cardName) {
       dispatch((0, _cardActions.removeCardFromPokerTable)(cardName));
@@ -747,7 +693,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var CardsBlock = function CardsBlock(_ref) {
   var selectedCard = _ref.selectedCard;
   var chosenCards = _ref.chosenCards;
-  var addCardToPokerTable = _ref.addCardToPokerTable;
+  var addPokerTableCard = _ref.addPokerTableCard;
 
   return _react2.default.createElement(
     'div',
@@ -761,7 +707,7 @@ var CardsBlock = function CardsBlock(_ref) {
           var isChosen = chosenCards.findIndex(function (card) {
             return card === cardName;
           }) > -1;
-          return _react2.default.createElement(_Card2.default, { cardName: cardName, isChosen: isChosen, addCard: addCardToPokerTable });
+          return _react2.default.createElement(_Card2.default, { cardName: cardName, isChosen: isChosen, addCard: addPokerTableCard });
         })
       );
     })
@@ -904,11 +850,13 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 var PokerTable = function PokerTable(_ref) {
   var playersAmount = _ref.playersAmount;
   var playerNames = _ref.playerNames;
-  var pokerTableCards = _ref.pokerTableCards;
+  var playerCards = _ref.playerCards;
+  var boardCards = _ref.boardCards;
   var selectedCard = _ref.selectedCard;
   var winningChances = _ref.winningChances;
   var onSelectCard = _ref.onSelectCard;
-  var removeCardFromPokerTable = _ref.removeCardFromPokerTable;
+  var removePlayerCard = _ref.removePlayerCard;
+  var removeBoardCard = _ref.removeBoardCard;
 
   var amount = parseInt(playersAmount, 10);
 
@@ -916,9 +864,9 @@ var PokerTable = function PokerTable(_ref) {
     'div',
     { className: 'PokerTable' },
     [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Player2.default, { number: i + 1, playerName: playerNames[i], pokerTableCards: pokerTableCards, selectedCard: selectedCard, winningChances: winningChances[i + 1], onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable });
+      return _react2.default.createElement(_Player2.default, { number: i + 1, playerName: playerNames[i], cards: playerCards, selectedCard: selectedCard, winningChances: winningChances[i + 1], onSelectCard: onSelectCard, removeCard: removePlayerCard });
     }),
-    _react2.default.createElement(_Board2.default, { pokerTableCards: pokerTableCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeCardFromPokerTable })
+    _react2.default.createElement(_Board2.default, { cards: boardCards, selectedCard: selectedCard, onSelectCard: onSelectCard, removeCard: removeBoardCard })
   );
 };
 
@@ -926,7 +874,8 @@ var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.options.playersAmount,
     playerNames: state.options.playerNames,
-    pokerTableCards: state.cards.pokerTableCards,
+    playerCards: state.cards.playerCards,
+    boardCards: state.cards.boardCards,
     winningChances: state.options.winningChances
   };
 };
@@ -1037,146 +986,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 });
 
-require.register("reducer.js", function(exports, require, module) {
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-exports.default = function () {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? initialState : arguments[0];
-  var action = arguments[1];
-
-  var pokerTableCards = void 0;
-  var chosenCards = void 0;
-  var selectedCard = void 0;
-  var key;
-
-  var _ret = function () {
-    switch (action.type) {
-      case 'SET_PLAYERS_AMOUNT':
-        return {
-          v: Object.assign({}, state, { playersAmount: action.playersAmount })
-        };
-      case 'SELECT_CARD':
-        return {
-          v: Object.assign({}, state, { selectedCard: action.cardName })
-        };
-      case 'ADD_CARD_TO_POKER_TABLE':
-        pokerTableCards = Object.assign({}, state.pokerTableCards);
-        pokerTableCards[state.selectedCard] = action.cardName;
-        selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
-        chosenCards = state.chosenCards;
-        chosenCards.push(action.cardName);
-        return {
-          v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
-        };
-      case 'REMOVE_CARD_FROM_POKER_TABLE':
-        var cardName = action.cardName;
-        pokerTableCards = Object.assign({}, state.pokerTableCards);
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = Object.keys(pokerTableCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            key = _step.value;
-
-            if (pokerTableCards[key] === cardName) {
-              pokerTableCards[key] = key;
-              selectedCard = key;
-              break;
-            }
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-
-        chosenCards = state.chosenCards.filter(function (card) {
-          return card !== cardName;
-        });
-        return {
-          v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
-        };
-      case 'RESET':
-        return {
-          v: Object.assign({}, initialState, { chosenCards: [] })
-        };
-      case 'CHANGE_PLAYER_NAME':
-        var playerNames = Object.assign([], state.playerNames);
-        playerNames[action.playerId] = action.playerName;
-        return {
-          v: Object.assign({}, state, { playerNames: playerNames })
-        };
-      case 'ADD_POKER_STATISTICS':
-        var winningChances = Object.assign([], action.pokerStatistics.percentages);
-        var histograms = Object.assign([], action.pokerStatistics.histograms);
-        return {
-          v: Object.assign({}, state, { winningChances: winningChances, histograms: histograms })
-        };
-      default:
-        return {
-          v: state
-        };
-    }
-  }();
-
-  if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
-};
-
-var _changeSelection = require('utils/changeSelection');
-
-var initialState = {
-  playersAmount: 1,
-  playerNames: ['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6', 'Player7', 'Player8', 'Player9'],
-  selectedCard: 'XF1',
-  pokerTableCards: {
-    'XF1': 'XF1', 'XS1': 'XS1',
-    'XF2': 'XF2', 'XS2': 'XS2',
-    'XF3': 'XF3', 'XS3': 'XS3',
-    'XF4': 'XF4', 'XS4': 'XS4',
-    'XF5': 'XF5', 'XS5': 'XS5',
-    'XF6': 'XF6', 'XS6': 'XS6',
-    'XF7': 'XF7', 'XS7': 'XS7',
-    'XF8': 'XF8', 'XS8': 'XS8',
-    'XF9': 'XF9', 'XS9': 'XS9',
-    'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
-  },
-  playerCards: {
-    'XF1': 'XF1', 'XS1': 'XS1',
-    'XF2': 'XF2', 'XS2': 'XS2',
-    'XF3': 'XF3', 'XS3': 'XS3',
-    'XF4': 'XF4', 'XS4': 'XS4',
-    'XF5': 'XF5', 'XS5': 'XS5',
-    'XF6': 'XF6', 'XS6': 'XS6',
-    'XF7': 'XF7', 'XS7': 'XS7',
-    'XF8': 'XF8', 'XS8': 'XS8',
-    'XF9': 'XF9', 'XS9': 'XS9'
-  },
-  boardCards: {
-    'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
-  },
-  chosenCards: [],
-  winningChances: [],
-  histograms: []
-};
-});
-
-;require.register("reducers/cardReducer.js", function(exports, require, module) {
+require.register("reducers/cardReducer.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1199,9 +1009,12 @@ function cardReducer() {
   var state = arguments.length <= 0 || arguments[0] === undefined ? _initialState2.default.cards : arguments[0];
   var action = arguments[1];
 
-  var pokerTableCards = void 0;
+  var playerCards = void 0;
+  var boardCards = void 0;
   var chosenCards = void 0;
   var selectedCard = void 0;
+  var key;
+  var key;
   var key;
 
   var _ret = function () {
@@ -1210,28 +1023,33 @@ function cardReducer() {
         return {
           v: Object.assign({}, state, { selectedCard: action.cardName })
         };
-      case 'ADD_CARD_TO_POKER_TABLE':
-        pokerTableCards = Object.assign({}, state.pokerTableCards);
-        pokerTableCards[state.selectedCard] = action.cardName;
-        selectedCard = (0, _changeSelection.changeSelection)(pokerTableCards);
+      case 'ADD_POKER_TABLE_CARD':
+        playerCards = Object.assign({}, state.playerCards);
+        boardCards = Object.assign({}, state.boardCards);
+        if (state.selectedCard.startsWith('XB')) {
+          boardCards[state.selectedCard] = action.cardName;
+        } else {
+          playerCards[state.selectedCard] = action.cardName;
+        }
+        selectedCard = 'XF1';
         chosenCards = state.chosenCards;
         chosenCards.push(action.cardName);
+        console.log(playerCards, boardCards);
         return {
-          v: Object.assign({}, state, { selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards })
+          v: Object.assign({}, state, { selectedCard: selectedCard, playerCards: playerCards, boardCards: boardCards, chosenCards: chosenCards })
         };
-      case 'REMOVE_CARD_FROM_POKER_TABLE':
-        var cardName = action.cardName;
-        pokerTableCards = Object.assign({}, state.pokerTableCards);
+      case 'REMOVE_PLAYER_CARD':
+        playerCards = Object.assign({}, state.playerCards);
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
 
         try {
-          for (var _iterator = Object.keys(pokerTableCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          for (var _iterator = Object.keys(playerCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
             key = _step.value;
 
-            if (pokerTableCards[key] === cardName) {
-              pokerTableCards[key] = key;
+            if (playerCards[key] === action.cardName) {
+              playerCards[key] = key;
               selectedCard = key;
               break;
             }
@@ -1247,6 +1065,81 @@ function cardReducer() {
           } finally {
             if (_didIteratorError) {
               throw _iteratorError;
+            }
+          }
+        }
+
+        chosenCards = state.chosenCards.filter(function (card) {
+          return card !== action.cardName;
+        });
+        return {
+          v: Object.assign({}, state, { selectedCard: selectedCard, playerCards: playerCards, chosenCards: chosenCards })
+        };
+      case 'REMOVE_BOARD_CARD':
+        boardCards = Object.assign({}, state.boardCards);
+        var _iteratorNormalCompletion2 = true;
+        var _didIteratorError2 = false;
+        var _iteratorError2 = undefined;
+
+        try {
+          for (var _iterator2 = Object.keys(boardCards)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+            key = _step2.value;
+
+            if (boardCards[key] === action.cardName) {
+              boardCards[key] = key;
+              selectedCard = key;
+              break;
+            }
+          }
+        } catch (err) {
+          _didIteratorError2 = true;
+          _iteratorError2 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+              _iterator2.return();
+            }
+          } finally {
+            if (_didIteratorError2) {
+              throw _iteratorError2;
+            }
+          }
+        }
+
+        chosenCards = state.chosenCards.filter(function (card) {
+          return card !== action.cardName;
+        });
+        return {
+          v: Object.assign({}, state, { selectedCard: selectedCard, boardCards: boardCards, chosenCards: chosenCards })
+        };
+      case 'REMOVE_CARD_FROM_POKER_TABLE':
+        var cardName = action.cardName;
+        pokerTableCards = Object.assign({}, state.pokerTableCards);
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+          for (var _iterator3 = Object.keys(pokerTableCards)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            key = _step3.value;
+
+            if (pokerTableCards[key] === cardName) {
+              pokerTableCards[key] = key;
+              selectedCard = key;
+              break;
+            }
+          }
+        } catch (err) {
+          _didIteratorError3 = true;
+          _iteratorError3 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+              _iterator3.return();
+            }
+          } finally {
+            if (_didIteratorError3) {
+              throw _iteratorError3;
             }
           }
         }
@@ -1276,18 +1169,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = {
   cards: {
-    pokerTableCards: {
-      'XF1': 'XF1', 'XS1': 'XS1',
-      'XF2': 'XF2', 'XS2': 'XS2',
-      'XF3': 'XF3', 'XS3': 'XS3',
-      'XF4': 'XF4', 'XS4': 'XS4',
-      'XF5': 'XF5', 'XS5': 'XS5',
-      'XF6': 'XF6', 'XS6': 'XS6',
-      'XF7': 'XF7', 'XS7': 'XS7',
-      'XF8': 'XF8', 'XS8': 'XS8',
-      'XF9': 'XF9', 'XS9': 'XS9',
-      'XB1': 'XB1', 'XB2': 'XB2', 'XB3': 'XB3', 'XB4': 'XB4', 'XB5': 'XB5'
-    },
     playerCards: {
       'XF1': 'XF1', 'XS1': 'XS1',
       'XF2': 'XF2', 'XS2': 'XS2',

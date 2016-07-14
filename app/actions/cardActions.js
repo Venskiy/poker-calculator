@@ -3,12 +3,17 @@ export const selectCard = (cardName) => ({
   cardName
 });
 
-export const addCardToPokerTable = (cardName) => ({
-  type: 'ADD_CARD_TO_POKER_TABLE',
+export const addPokerTableCard = (cardName) => ({
+  type: 'ADD_POKER_TABLE_CARD',
   cardName
 });
 
-export const removeCardFromPokerTable = (cardName) => ({
-  type: 'REMOVE_CARD_FROM_POKER_TABLE',
+export const removePlayerCard = (cardName) => ({
+  type: 'REMOVE_PLAYER_CARD',
+  cardName
+});
+
+export const removeBoardCard = (cardName) => ({
+  type: 'REMOVE_BOARD_CARD',
   cardName
 });

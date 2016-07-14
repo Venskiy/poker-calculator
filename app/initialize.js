@@ -8,10 +8,11 @@ import {Provider} from 'react-redux';
 import 'jquery';
 import 'toastr';
 
-import reducer from 'reducer';
+import rootReducer from 'reducers/rootReducer';
+import initialState from 'reducers/initialState';
 import App from 'container/App';
 
-const store = createStore(reducer, applyMiddleware(thunkMiddleware));
+const store = createStore(rootReducer, initialState, applyMiddleware(thunkMiddleware));
 
 document.addEventListener('DOMContentLoaded', () => {
   ReactDOM.render(

@@ -16,10 +16,10 @@ const PokerTable = ({playersAmount, playerNames, pokerTableCards, selectedCard, 
 };
 
 const mapStateToProps = (state) => ({
-  playersAmount: state.playersAmount,
-  playerNames: state.playerNames,
-  pokerTableCards: state.pokerTableCards,
-  winningChances: state.winningChances
+  playersAmount: state.options.playersAmount,
+  playerNames: state.options.playerNames,
+  pokerTableCards: state.cards.pokerTableCards,
+  winningChances: state.options.winningChances
 });
 
 export default connect(mapStateToProps)(PokerTable);

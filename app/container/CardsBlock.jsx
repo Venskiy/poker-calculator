@@ -19,7 +19,7 @@ const CardsBlock = ({selectedCard, chosenCards, addCardToPokerTable}) => {
 };
 
 const mapStateToProps = (state) => ({
-  chosenCards: state.chosenCards
+  chosenCards: state.cards.chosenCards
 });
 
 export default connect(mapStateToProps)(CardsBlock);

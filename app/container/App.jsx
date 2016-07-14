@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {selectCard, addCardToPokerTable, removeCardFromPokerTable} from 'actions';
+import {selectCard, addCardToPokerTable, removeCardFromPokerTable} from 'actions/cardActions';
 
 import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';
@@ -25,7 +25,7 @@ const App = React.createClass({
 });
 
 const mapStateToProps = (state) => ({
-  selectedCard: state.selectedCard
+  selectedCard: state.cards.selectedCard
 });
 
 const mapDispatchToProps = (dispatch) => ({

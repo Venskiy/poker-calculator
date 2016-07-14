@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {setPlayersAmount, reset, changePlayerName, addPokerStatistics} from 'actions';
+import {setPlayersAmount, reset, changePlayerName, addPokerStatistics} from 'actions/optionActions';
 import toastr from 'toastr';
 
 import PlayersAmount from 'components/PlayersAmount';
@@ -27,9 +27,9 @@ const Options = ({pokerStatistics, playersAmount, playerNames, onPlayersAmountCh
 };
 
 const mapStateToProps = (state) => ({
-  playersAmount: state.playersAmount,
-  playerNames: state.playerNames,
-  pokerStatistics: state.pokerStatistics
+  playersAmount: state.options.playersAmount,
+  playerNames: state.options.playerNames,
+  pokerStatistics: state.options.pokerStatistics
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -38,7 +38,6 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   reset() {
-    toastr.error('I do not think that word means what you think it means.', 'Inconceivable!');
     dispatch(reset());
   },
 

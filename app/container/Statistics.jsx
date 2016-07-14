@@ -16,9 +16,9 @@ const Statistics = ({playersAmount, playerNames, histograms}) => {
 };
 
 const mapStateToProps = (state) => ({
-  playersAmount: state.playersAmount,
-  playerNames: state.playerNames,
-  histograms: state.histograms
+  playersAmount: state.options.playersAmount,
+  playerNames: state.options.playerNames,
+  histograms: state.options.histograms
 });
 
 export default connect(mapStateToProps)(Statistics);

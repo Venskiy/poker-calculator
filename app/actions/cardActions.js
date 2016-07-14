@@ -1,3 +1,5 @@
+import {changeSelection} from 'utils/changeSelection';
+
 export const selectCard = (cardName) => ({
   type: 'SELECT_CARD',
   cardName
@@ -31,3 +33,14 @@ export const removeChosenCard = (cardName) => ({
 export const resetCards = () => ({
   type: 'RESET_CARDS'
 });
+
+export const changeSelectedCard = () => {
+  return (dispatch, getState) => {
+    changeSelection(getState().options.playersAmount,
+                    getState().cards.selectedCard,
+                    getState().cards.playerCards,
+                    getState().cards.boardCards).then(cardName => {
+      dispatch({type: 'SELECT_CARD', cardName});
+    });
+  };
+};

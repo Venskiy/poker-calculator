@@ -1,5 +1,4 @@
 import initialState from './initialState';
-import {changeSelection} from 'utils/changeSelection';
 
 export default function cardReducer(state = initialState.cards, action) {
   let playerCards;
@@ -18,9 +17,7 @@ export default function cardReducer(state = initialState.cards, action) {
       else {
         playerCards[state.selectedCard] = action.cardName;
       }
-      selectedCard = 'XF1';
-      return Object.assign({}, state, {selectedCard: selectedCard,
-                                       playerCards: playerCards,
+      return Object.assign({}, state, {playerCards: playerCards,
                                        boardCards: boardCards});
     case 'REMOVE_PLAYER_CARD':
       playerCards = Object.assign({}, state.playerCards);

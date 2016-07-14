@@ -1,7 +1,7 @@
 import React from 'react';
 import {connect} from 'react-redux';
 import {setPlayersAmount, addPokerStatistics, resetOptions, changePlayerName} from 'actions/optionActions';
-import {resetCards} from 'actions/cardActions';
+import {resetCards, changeSelectedCard} from 'actions/cardActions';
 
 import PlayersAmount from 'components/PlayersAmount';
 import PlayerName from 'components/PlayerName';
@@ -48,6 +48,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   changePlayersAmount(playersAmount) {
     dispatch(setPlayersAmount(playersAmount));
+    dispatch(changeSelectedCard());
   },
 
   addPokerStatistics() {

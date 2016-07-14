@@ -159,6 +159,10 @@ require.register("actions/actionTypes.js", function(exports, require, module) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.changeSelectedCard = exports.resetCards = exports.removeChosenCard = exports.addChosenCard = exports.removeBoardCard = exports.removePlayerCard = exports.addPokerTableCard = exports.selectCard = undefined;
+
+var _changeSelection = require('utils/changeSelection');
+
 var selectCard = exports.selectCard = function selectCard(cardName) {
   return {
     type: 'SELECT_CARD',
@@ -204,6 +208,14 @@ var removeChosenCard = exports.removeChosenCard = function removeChosenCard(card
 var resetCards = exports.resetCards = function resetCards() {
   return {
     type: 'RESET_CARDS'
+  };
+};
+
+var changeSelectedCard = exports.changeSelectedCard = function changeSelectedCard() {
+  return function (dispatch, getState) {
+    (0, _changeSelection.changeSelection)(getState().options.playersAmount, getState().cards.selectedCard, getState().cards.playerCards, getState().cards.boardCards).then(function (cardName) {
+      dispatch({ type: 'SELECT_CARD', cardName: cardName });
+    });
   };
 };
 });
@@ -754,6 +766,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
     addPokerTableCard: function addPokerTableCard(cardName) {
       dispatch((0, _cardActions.addPokerTableCard)(cardName));
       dispatch((0, _cardActions.addChosenCard)(cardName));
+      dispatch((0, _cardActions.changeSelectedCard)());
     }
   };
 };
@@ -854,6 +867,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
     changePlayersAmount: function changePlayersAmount(playersAmount) {
       dispatch((0, _optionActions.setPlayersAmount)(playersAmount));
+      dispatch((0, _cardActions.changeSelectedCard)());
     },
     addPokerStatistics: function addPokerStatistics() {
       dispatch((0, _optionActions.addPokerStatistics)());
@@ -1089,8 +1103,6 @@ var _initialState = require('./initialState');
 
 var _initialState2 = _interopRequireDefault(_initialState);
 
-var _changeSelection = require('utils/changeSelection');
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function cardReducer() {
@@ -1112,9 +1124,7 @@ function cardReducer() {
       } else {
         playerCards[state.selectedCard] = action.cardName;
       }
-      selectedCard = 'XF1';
-      return Object.assign({}, state, { selectedCard: selectedCard,
-        playerCards: playerCards,
+      return Object.assign({}, state, { playerCards: playerCards,
         boardCards: boardCards });
     case 'REMOVE_PLAYER_CARD':
       playerCards = Object.assign({}, state.playerCards);
@@ -1258,16 +1268,16 @@ function optionReducer() {
   switch (action.type) {
     case 'SET_PLAYERS_AMOUNT':
       return Object.assign({}, state, { playersAmount: action.playersAmount });
-    case 'ADD_POKER_STATISTICS':
-      var winningChances = Array.from(action.pokerStatistics.percentages);
-      var histograms = Array.from(action.pokerStatistics.histograms);
-      return Object.assign({}, state, { winningChances: winningChances, histograms: histograms });
     case 'RESET_OPTIONS':
       return Object.assign({}, _initialState2.default.options);
     case 'CHANGE_PLAYER_NAME':
       var playerNames = Array.from(state.playerNames);
       playerNames[action.playerId] = action.playerName;
       return Object.assign({}, state, { playerNames: playerNames });
+    case 'ADD_POKER_STATISTICS':
+      var winningChances = Array.from(action.pokerStatistics.percentages);
+      var histograms = Array.from(action.pokerStatistics.histograms);
+      return Object.assign({}, state, { winningChances: winningChances, histograms: histograms });
     default:
       return state;
   }
@@ -1377,33 +1387,81 @@ require.register("utils/changeSelection.js", function(exports, require, module) 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var changeSelection = exports.changeSelection = function changeSelection(pokerTableCards) {
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+var changeSelection = exports.changeSelection = function changeSelection(playersAmount, currentSelectedCard, playerCards, boardCards) {
+  if (currentSelectedCard.startsWith('XB')) {
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
 
-  try {
-    for (var _iterator = Object.keys(pokerTableCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var key = _step.value;
+    try {
+      for (var _iterator = Object.keys(boardCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var key = _step.value;
 
-      if (pokerTableCards[key].startsWith('X')) {
-        return key;
+        if (boardCards[key].startsWith('X')) {
+          return Promise.resolve(key);
+        }
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
       }
     }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
+
+    for (var i = 0; i < playersAmount; ++i) {
+      if (playerCards['XF' + (i + 1)].startsWith('X')) {
+        return Promise.resolve('XF' + (i + 1));
       }
+      if (playerCards['XS' + (i + 1)].startsWith('X')) {
+        return Promise.resolve('XS' + (i + 1));
+      }
+    }
+  } else {
+    for (var _i = 0; _i < playersAmount; ++_i) {
+      if (playerCards['XF' + (_i + 1)].startsWith('X')) {
+        return Promise.resolve('XF' + (_i + 1));
+      }
+      if (playerCards['XS' + (_i + 1)].startsWith('X')) {
+        return Promise.resolve('XS' + (_i + 1));
+      }
+    }
+
+    var _iteratorNormalCompletion2 = true;
+    var _didIteratorError2 = false;
+    var _iteratorError2 = undefined;
+
+    try {
+      for (var _iterator2 = Object.keys(boardCards)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+        var _key = _step2.value;
+
+        if (boardCards[_key].startsWith('X')) {
+          return Promise.resolve(_key);
+        }
+      }
+    } catch (err) {
+      _didIteratorError2 = true;
+      _iteratorError2 = err;
     } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
+      try {
+        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+          _iterator2.return();
+        }
+      } finally {
+        if (_didIteratorError2) {
+          throw _iteratorError2;
+        }
       }
     }
   }
+  return Promise.resolve('');
 };
 });
 

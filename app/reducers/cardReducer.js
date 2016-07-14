@@ -19,9 +19,8 @@ export default function cardReducer(state = initialState.cards, action) {
         playerCards[state.selectedCard] = action.cardName;
       }
       selectedCard = 'XF1';
-      chosenCards = state.chosenCards;
+      chosenCards = Object.assign([], state.chosenCards);
       chosenCards.push(action.cardName);
-      console.log(playerCards, boardCards);
       return Object.assign({}, state, {selectedCard: selectedCard, playerCards: playerCards, boardCards: boardCards, chosenCards: chosenCards});
     case 'REMOVE_PLAYER_CARD':
       playerCards = Object.assign({}, state.playerCards);
@@ -45,18 +44,8 @@ export default function cardReducer(state = initialState.cards, action) {
       }
       chosenCards = state.chosenCards.filter(card => card !== action.cardName);
       return Object.assign({}, state, {selectedCard: selectedCard, boardCards: boardCards, chosenCards: chosenCards});
-    case 'REMOVE_CARD_FROM_POKER_TABLE':
-      const cardName = action.cardName;
-      pokerTableCards = Object.assign({}, state.pokerTableCards);
-      for (var key of Object.keys(pokerTableCards)) {
-        if(pokerTableCards[key] === cardName) {
-          pokerTableCards[key] = key;
-          selectedCard = key;
-          break;
-        }
-      }
-      chosenCards = state.chosenCards.filter(card => card !== cardName);
-      return Object.assign({}, state, {selectedCard: selectedCard, pokerTableCards: pokerTableCards, chosenCards: chosenCards})
+    case 'RESET_CARDS':
+      return Object.assign({}, initialState.cards);
     default:
       return state;
   }

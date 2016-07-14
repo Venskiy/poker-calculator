@@ -1,26 +1,40 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {setPlayersAmount, reset, changePlayerName, addPokerStatistics} from 'actions/optionActions';
-import toastr from 'toastr';
+import {setPlayersAmount, addPokerStatistics, resetOptions, changePlayerName} from 'actions/optionActions';
+import {resetCards} from 'actions/cardActions';
 
 import PlayersAmount from 'components/PlayersAmount';
 import PlayerName from 'components/PlayerName';
 
-const Options = ({pokerStatistics, playersAmount, playerNames, onPlayersAmountChange, reset, onChangePlayerName, addStatistics}) => {
+const Options = ({playersAmount, playersNames, changePlayersAmount, addPokerStatistics, reset, changePlayerName}) => {
   const amount = parseInt(playersAmount, 10);
 
   return <div className="Options">
     <div className="PlayersAmount">
       <div className="SelectText">Select the amount of players:</div>
       <div className="CustomSelect">
-        <PlayersAmount onPlayersAmountChange={onPlayersAmountChange} playersAmount={playersAmount} />
+        <PlayersAmount
+          playersAmount={amount}
+          onChangePlayersAmount={changePlayersAmount} />
       </div>
     </div>
-    <input className="CustomButton" type="button" value="Count statistcs" onClick={addStatistics} />
-    <input className="CustomButton" type="button" value="Reset" onClick={reset} />
+    <input
+      className="CustomButton"
+      type="button"
+      value="Count statistcs"
+      onClick={addPokerStatistics} />
+    <input
+      className="CustomButton"
+      type="button"
+      value="Reset"
+      onClick={reset} />
     <div className="ChangeNameArea">
       {[...Array(amount)].map((x, i) =>
-        <PlayerName playerId={i} playerName={playerNames[i]} onChangePlayerName={onChangePlayerName} />
+          <PlayerName
+            playerId={i}
+            playerName={playersNames[i]}
+            onChangePlayerName={changePlayerName}
+            key={i} />
       )}
     </div>
   </div>;
@@ -28,26 +42,26 @@ const Options = ({pokerStatistics, playersAmount, playerNames, onPlayersAmountCh
 
 const mapStateToProps = (state) => ({
   playersAmount: state.options.playersAmount,
-  playerNames: state.options.playerNames,
-  pokerStatistics: state.options.pokerStatistics
+  playersNames: state.options.playerNames
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  onPlayersAmountChange(playersAmount) {
+  changePlayersAmount(playersAmount) {
     dispatch(setPlayersAmount(playersAmount));
   },
 
-  reset() {
-    dispatch(reset());
+  addPokerStatistics() {
+    dispatch(addPokerStatistics());
   },
 
-  onChangePlayerName(playerId, playerName) {
+  reset() {
+    dispatch(resetOptions());
+    dispatch(resetCards());
+  },
+
+  changePlayerName(playerId, playerName) {
     dispatch(changePlayerName(playerId, playerName));
   },
-
-  addStatistics() {
-    dispatch(addPokerStatistics());
-  }
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Options);

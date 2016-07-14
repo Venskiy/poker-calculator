@@ -5,8 +5,8 @@ export const setPlayersAmount = (playersAmount) => ({
   playersAmount
 });
 
-export const reset = () => ({
-  type: 'RESET'
+export const resetOptions = () => ({
+  type: 'RESET_OPTIONS'
 });
 
 export const changePlayerName = (playerId, playerName) => ({
@@ -17,7 +17,9 @@ export const changePlayerName = (playerId, playerName) => ({
 
 export const addPokerStatistics = () => {
   return (dispatch, getState) => {
-    calculatePokerStatistics(getState().options.playersAmount, getState().cards.pokerTableCards).then(pokerStatistics => {
+    calculatePokerStatistics(getState().options.playersAmount,
+                              getState().cards.playerCards,
+                              getState().cards.boardCards).then(pokerStatistics => {
       dispatch({type: 'ADD_POKER_STATISTICS', pokerStatistics});
     });
   };

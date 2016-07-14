@@ -17,3 +17,7 @@ export const removeBoardCard = (cardName) => ({
   type: 'REMOVE_BOARD_CARD',
   cardName
 });
+
+export const resetCards = () => ({
+  type: 'RESET_CARDS'
+});

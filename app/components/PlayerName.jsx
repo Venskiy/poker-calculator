@@ -13,6 +13,10 @@ export default React.createClass({
   },
 
   render() {
-    return <input ref="playerName" type="text" value={this.props.playerName} onChange={this.handeOnChange} />
+    return <input
+             ref="playerName"
+             type="text"
+             value={this.props.playerName}
+             onChange={this.handeOnChange} />
   }
 });

@@ -1,6 +1,5 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {selectCard, addPokerTableCard, removeCardFromPokerTable} from 'actions/cardActions';
 
 import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';
@@ -13,7 +12,7 @@ const App = React.createClass({
       <div className="Container">
         <div className="CardsAndTable">
           <CardsBlock />
-          <PokerTable selectedCard={this.props.selectedCard} onSelectCard={this.props.onSelectCard} removeCardFromPokerTable={this.props.removeCardFromPokerTable} />
+          <PokerTable playersAmount={this.props.playersAmount} playerNames={this.props.playerNames} />
         </div>
         <div className="OptionsAndStatistics">
           <Options />
@@ -25,19 +24,8 @@ const App = React.createClass({
 });
 
 const mapStateToProps = (state) => ({
-  selectedCard: state.cards.selectedCard,
   playersAmount: state.options.playersAmount,
   playerNames: state.options.playerNames
 });
 
-const mapDispatchToProps = (dispatch) => ({
-  onSelectCard(cardName) {
-    dispatch(selectCard(cardName));
-  },
-
-  removeCardFromPokerTable(cardName) {
-    dispatch(removeCardFromPokerTable(cardName));
-  }
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(App);
+export default connect(mapStateToProps)(App);

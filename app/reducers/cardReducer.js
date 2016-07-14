@@ -19,7 +19,9 @@ export default function cardReducer(state = initialState.cards, action) {
         playerCards[state.selectedCard] = action.cardName;
       }
       selectedCard = 'XF1';
-      return Object.assign({}, state, {selectedCard: selectedCard, playerCards: playerCards, boardCards: boardCards});
+      return Object.assign({}, state, {selectedCard: selectedCard,
+                                       playerCards: playerCards,
+                                       boardCards: boardCards});
     case 'REMOVE_PLAYER_CARD':
       playerCards = Object.assign({}, state.playerCards);
       for (var key of Object.keys(playerCards)) {
@@ -29,7 +31,8 @@ export default function cardReducer(state = initialState.cards, action) {
           break;
         }
       }
-      return Object.assign({}, state, {selectedCard: selectedCard, playerCards: playerCards, chosenCards: chosenCards});
+      return Object.assign({}, state, {selectedCard: selectedCard,
+                                       playerCards: playerCards});
     case 'REMOVE_BOARD_CARD':
       boardCards = Object.assign({}, state.boardCards);
       for (var key of Object.keys(boardCards)) {
@@ -39,9 +42,8 @@ export default function cardReducer(state = initialState.cards, action) {
           break;
         }
       }
-      return Object.assign({}, state, {selectedCard: selectedCard, boardCards: boardCards, chosenCards: chosenCards});
-    case 'RESET_CARDS':
-      return Object.assign({}, initialState.cards);
+      return Object.assign({}, state, {selectedCard: selectedCard,
+                                      boardCards: boardCards});
     case 'ADD_CHOSEN_CARD':
       chosenCards = Array.from(state.chosenCards);
       chosenCards.push(action.cardName);
@@ -49,6 +51,8 @@ export default function cardReducer(state = initialState.cards, action) {
     case 'REMOVE_CHOSEN_CARD':
       chosenCards = state.chosenCards.filter(card => card !== action.cardName);
       return Object.assign({}, state, {chosenCards: chosenCards});
+    case 'RESET_CARDS':
+      return Object.assign({}, initialState.cards);
     default:
       return state;
   }

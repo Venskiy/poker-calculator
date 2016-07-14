@@ -5,11 +5,11 @@ export default React.createClass({
     cardName: React.PropTypes.string.isRequired,
     selected: React.PropTypes.string,
     onSelect: React.PropTypes.func.isRequired,
-    removeCard: React.PropTypes.func.isRequired
+    onRemove: React.PropTypes.func.isRequired
   },
 
   handleClick(cardName) {
-    cardName.startsWith('X') ? this.props.onSelect(cardName) : this.props.removeCard(cardName);
+    cardName.startsWith('X') ? this.props.onSelect(cardName) : this.props.onRemove(cardName);
   },
 
   render() {

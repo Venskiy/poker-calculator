@@ -5,9 +5,11 @@ import Histogram from 'components/Histogram';
 import Combinations from 'components/Combinations';
 
 const Statistics = ({playersAmount, playerNames, histograms}) => {
+  const amount = parseInt(playersAmount, 10);
+
   return <div className="Statistics">
     <Combinations />
-    {[...Array(playersAmount)].map((x, i) =>
+    {[...Array(amount)].map((x, i) =>
       <Histogram
         playerName={playerNames[i]}
         histogram={histograms[i]}

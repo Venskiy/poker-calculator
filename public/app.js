@@ -187,6 +187,20 @@ var removeBoardCard = exports.removeBoardCard = function removeBoardCard(cardNam
   };
 };
 
+var addChosenCard = exports.addChosenCard = function addChosenCard(cardName) {
+  return {
+    type: 'ADD_CHOSEN_CARD',
+    cardName: cardName
+  };
+};
+
+var removeChosenCard = exports.removeChosenCard = function removeChosenCard(cardName) {
+  return {
+    type: 'REMOVE_CHOSEN_CARD',
+    cardName: cardName
+  };
+};
+
 var resetCards = exports.resetCards = function resetCards() {
   return {
     type: 'RESET_CARDS'
@@ -288,11 +302,11 @@ exports.default = _react2.default.createClass({
   propTypes: {
     cardName: _react2.default.PropTypes.string.isRequired,
     isChosen: _react2.default.PropTypes.bool.isRequired,
-    addCard: _react2.default.PropTypes.func.isRequired
+    onClickCard: _react2.default.PropTypes.func.isRequired
   },
 
   handleClick: function handleClick(cardName) {
-    this.props.isChosen ? alert('This card is already chosen.') : this.props.addCard(cardName);
+    this.props.isChosen ? alert('This card is already chosen.') : this.props.onClickCard(cardName);
   },
   render: function render() {
     var cardName = this.props.cardName;
@@ -646,7 +660,7 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'CardsAndTable' },
-        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard, addPokerTableCard: this.props.addPokerTableCard }),
+        _react2.default.createElement(_CardsBlock2.default, null),
         _react2.default.createElement(_PokerTable2.default, { selectedCard: this.props.selectedCard, onSelectCard: this.props.onSelectCard, removeCardFromPokerTable: this.props.removeCardFromPokerTable })
       ),
       _react2.default.createElement(
@@ -672,9 +686,6 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
     onSelectCard: function onSelectCard(cardName) {
       dispatch((0, _cardActions.selectCard)(cardName));
     },
-    addPokerTableCard: function addPokerTableCard(cardName) {
-      dispatch((0, _cardActions.addPokerTableCard)(cardName));
-    },
     removeCardFromPokerTable: function removeCardFromPokerTable(cardName) {
       dispatch((0, _cardActions.removeCardFromPokerTable)(cardName));
     }
@@ -696,6 +707,8 @@ var _react = require('react');
 var _react2 = _interopRequireDefault(_react);
 
 var _reactRedux = require('react-redux');
+
+var _cardActions = require('actions/cardActions');
 
 var _Card = require('components/Card');
 
@@ -722,7 +735,10 @@ var CardsBlock = function CardsBlock(_ref) {
           var isChosen = chosenCards.findIndex(function (card) {
             return card === cardName;
           }) > -1;
-          return _react2.default.createElement(_Card2.default, { cardName: cardName, isChosen: isChosen, addCard: addPokerTableCard });
+          return _react2.default.createElement(_Card2.default, {
+            cardName: cardName,
+            isChosen: isChosen,
+            onClickCard: addPokerTableCard });
         })
       );
     })
@@ -735,7 +751,15 @@ var mapStateToProps = function mapStateToProps(state) {
   };
 };
 
-exports.default = (0, _reactRedux.connect)(mapStateToProps)(CardsBlock);
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+  return {
+    addPokerTableCard: function addPokerTableCard(cardName) {
+      dispatch((0, _cardActions.addPokerTableCard)(cardName));
+    }
+  };
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(CardsBlock);
 });
 
 require.register("container/Options.jsx", function(exports, require, module) {
@@ -1047,7 +1071,7 @@ function cardReducer() {
         playerCards[state.selectedCard] = action.cardName;
       }
       selectedCard = 'XF1';
-      chosenCards = Object.assign([], state.chosenCards);
+      chosenCards = Array.from(state.chosenCards);
       chosenCards.push(action.cardName);
       return Object.assign({}, state, { selectedCard: selectedCard, playerCards: playerCards, boardCards: boardCards, chosenCards: chosenCards });
     case 'REMOVE_PLAYER_CARD':
@@ -1188,13 +1212,13 @@ function optionReducer() {
     case 'SET_PLAYERS_AMOUNT':
       return Object.assign({}, state, { playersAmount: action.playersAmount });
     case 'ADD_POKER_STATISTICS':
-      var winningChances = Object.assign([], action.pokerStatistics.percentages);
-      var histograms = Object.assign([], action.pokerStatistics.histograms);
+      var winningChances = Array.from(action.pokerStatistics.percentages);
+      var histograms = Array.from(action.pokerStatistics.histograms);
       return Object.assign({}, state, { winningChances: winningChances, histograms: histograms });
     case 'RESET_OPTIONS':
       return Object.assign({}, _initialState2.default.options);
     case 'CHANGE_PLAYER_NAME':
-      var playerNames = Object.assign([], state.playerNames);
+      var playerNames = Array.from(state.playerNames);
       playerNames[action.playerId] = action.playerName;
       return Object.assign({}, state, { playerNames: playerNames });
     default:

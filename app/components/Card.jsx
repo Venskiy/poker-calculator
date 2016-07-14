@@ -4,11 +4,11 @@ export default React.createClass({
   propTypes: {
     cardName: React.PropTypes.string.isRequired,
     isChosen: React.PropTypes.bool.isRequired,
-    addCard: React.PropTypes.func.isRequired
+    onClickCard: React.PropTypes.func.isRequired
   },
 
   handleClick(cardName) {
-    this.props.isChosen ? alert('This card is already chosen.') : this.props.addCard(cardName);
+    this.props.isChosen ? alert('This card is already chosen.') : this.props.onClickCard(cardName);
   },
 
   render() {

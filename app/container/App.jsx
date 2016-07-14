@@ -12,7 +12,7 @@ const App = React.createClass({
     return (
       <div className="Container">
         <div className="CardsAndTable">
-          <CardsBlock selectedCard={this.props.selectedCard} addPokerTableCard={this.props.addPokerTableCard} />
+          <CardsBlock />
           <PokerTable selectedCard={this.props.selectedCard} onSelectCard={this.props.onSelectCard} removeCardFromPokerTable={this.props.removeCardFromPokerTable} />
         </div>
         <div className="OptionsAndStatistics">
@@ -33,10 +33,6 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   onSelectCard(cardName) {
     dispatch(selectCard(cardName));
-  },
-
-  addPokerTableCard(cardName) {
-    dispatch(addPokerTableCard(cardName));
   },
 
   removeCardFromPokerTable(cardName) {

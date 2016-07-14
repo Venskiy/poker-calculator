@@ -18,6 +18,16 @@ export const removeBoardCard = (cardName) => ({
   cardName
 });
 
+export const addChosenCard = (cardName) => ({
+  type: 'ADD_CHOSEN_CARD',
+  cardName
+});
+
+export const removeChosenCard = (cardName) => ({
+  type: 'REMOVE_CHOSEN_CARD',
+  cardName
+});
+
 export const resetCards = () => ({
   type: 'RESET_CARDS'
 });

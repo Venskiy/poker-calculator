@@ -415,7 +415,7 @@ exports.default = _react2.default.createClass({
       [].concat(_toConsumableArray(Array(10))).map(function (x, i) {
         return _react2.default.createElement(
           'div',
-          null,
+          { key: _this.props.playerName + '-field-' + i },
           _this.props.histogram ? _this.props.histogram[i] : '-'
         );
       })
@@ -640,7 +640,7 @@ var App = _react2.default.createClass({
         'div',
         { className: 'OptionsAndStatistics' },
         _react2.default.createElement(_Options2.default, null),
-        _react2.default.createElement(_Statistics2.default, null)
+        _react2.default.createElement(_Statistics2.default, { playersAmount: this.props.playersAmount, playerNames: this.props.playerNames })
       )
     );
   }
@@ -648,7 +648,9 @@ var App = _react2.default.createClass({
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    selectedCard: state.cards.selectedCard
+    selectedCard: state.cards.selectedCard,
+    playersAmount: state.options.playersAmount,
+    playerNames: state.options.playerNames
   };
 };
 
@@ -913,22 +915,21 @@ var Statistics = function Statistics(_ref) {
   var playerNames = _ref.playerNames;
   var histograms = _ref.histograms;
 
-  var amount = parseInt(playersAmount, 10);
-
   return _react2.default.createElement(
     'div',
     { className: 'Statistics' },
     _react2.default.createElement(_Combinations2.default, null),
-    [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
-      return _react2.default.createElement(_Histogram2.default, { playerName: playerNames[i], histogram: histograms[i] });
+    [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
+      return _react2.default.createElement(_Histogram2.default, {
+        playerName: playerNames[i],
+        histogram: histograms[i],
+        key: 'histogram-' + i });
     })
   );
 };
 
 var mapStateToProps = function mapStateToProps(state) {
   return {
-    playersAmount: state.options.playersAmount,
-    playerNames: state.options.playerNames,
     histograms: state.options.histograms
   };
 };

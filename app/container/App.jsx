@@ -17,7 +17,7 @@ const App = React.createClass({
         </div>
         <div className="OptionsAndStatistics">
           <Options />
-          <Statistics />
+          <Statistics playersAmount={this.props.playersAmount} playerNames={this.props.playerNames} />
         </div>
       </div>
     );
@@ -25,7 +25,9 @@ const App = React.createClass({
 });
 
 const mapStateToProps = (state) => ({
-  selectedCard: state.cards.selectedCard
+  selectedCard: state.cards.selectedCard,
+  playersAmount: state.options.playersAmount,
+  playerNames: state.options.playerNames
 });
 
 const mapDispatchToProps = (dispatch) => ({

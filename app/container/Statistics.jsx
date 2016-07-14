@@ -5,19 +5,18 @@ import Histogram from 'components/Histogram';
 import Combinations from 'components/Combinations';
 
 const Statistics = ({playersAmount, playerNames, histograms}) => {
-  const amount = parseInt(playersAmount, 10);
-
   return <div className="Statistics">
     <Combinations />
-    {[...Array(amount)].map((x, i) =>
-      <Histogram playerName={playerNames[i]} histogram={histograms[i]} />
+    {[...Array(playersAmount)].map((x, i) =>
+      <Histogram
+        playerName={playerNames[i]}
+        histogram={histograms[i]}
+        key={`histogram-${i}`} />
     )}
   </div>
 };
 
 const mapStateToProps = (state) => ({
-  playersAmount: state.options.playersAmount,
-  playerNames: state.options.playerNames,
   histograms: state.options.histograms
 });
 

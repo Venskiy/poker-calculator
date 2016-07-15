@@ -48,6 +48,13 @@ export default function cardReducer(state = initialState.cards, action) {
     case 'REMOVE_CHOSEN_CARD':
       chosenCards = state.chosenCards.filter(card => card !== action.cardName);
       return Object.assign({}, state, {chosenCards: chosenCards});
+    case 'SET_PLAYER_CARDS':
+      playerCards = Object.assign({}, state.playerCards);
+      for(let i = parseInt(action.playersAmount); i < 9; ++i) {
+        playerCards[`XF${i + 1}`] = `XF${i + 1}`;
+        playerCards[`XS${i + 1}`] = `XS${i + 1}`;
+      }
+      return Object.assign({}, state, {playerCards: playerCards});
     case 'RESET_CARDS':
       return Object.assign({}, initialState.cards);
     default:

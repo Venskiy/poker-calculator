@@ -159,7 +159,7 @@ require.register("actions/actionTypes.js", function(exports, require, module) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.changeSelectedCard = exports.resetCards = exports.removeChosenCard = exports.addChosenCard = exports.removeBoardCard = exports.removePlayerCard = exports.addPokerTableCard = exports.selectCard = undefined;
+exports.changeSelectedCard = exports.resetCards = exports.setPlayerCards = exports.removeChosenCard = exports.addChosenCard = exports.removeBoardCard = exports.removePlayerCard = exports.addPokerTableCard = exports.selectCard = undefined;
 
 var _changeSelection = require('utils/changeSelection');
 
@@ -202,6 +202,13 @@ var removeChosenCard = exports.removeChosenCard = function removeChosenCard(card
   return {
     type: 'REMOVE_CHOSEN_CARD',
     cardName: cardName
+  };
+};
+
+var setPlayerCards = exports.setPlayerCards = function setPlayerCards(playersAmount) {
+  return {
+    type: 'SET_PLAYER_CARDS',
+    playersAmount: playersAmount
   };
 };
 
@@ -905,6 +912,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   return {
     changePlayersAmount: function changePlayersAmount(playersAmount) {
       dispatch((0, _optionActions.setPlayersAmount)(playersAmount));
+      dispatch((0, _cardActions.setPlayerCards)(playersAmount));
       dispatch((0, _cardActions.changeSelectedCard)());
     },
     addPokerStatistics: function addPokerStatistics() {
@@ -1244,6 +1252,13 @@ function cardReducer() {
         return card !== action.cardName;
       });
       return Object.assign({}, state, { chosenCards: chosenCards });
+    case 'SET_PLAYER_CARDS':
+      playerCards = Object.assign({}, state.playerCards);
+      for (var i = parseInt(action.playersAmount); i < 9; ++i) {
+        playerCards['XF' + (i + 1)] = 'XF' + (i + 1);
+        playerCards['XS' + (i + 1)] = 'XS' + (i + 1);
+      }
+      return Object.assign({}, state, { playerCards: playerCards });
     case 'RESET_CARDS':
       return Object.assign({}, _initialState2.default.cards);
     default:

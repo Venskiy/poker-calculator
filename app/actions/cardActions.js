@@ -30,6 +30,11 @@ export const removeChosenCard = (cardName) => ({
   cardName
 });
 
+export const setPlayerCards = (playersAmount) => ({
+  type: 'SET_PLAYER_CARDS',
+  playersAmount
+});
+
 export const resetCards = () => ({
   type: 'RESET_CARDS'
 });

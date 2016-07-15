@@ -17,6 +17,10 @@ export default function optionReducer(state = initialState.options, action) {
       const winningChances = Array.from(action.pokerStatistics.percentages);
       const histograms = Array.from(action.pokerStatistics.histograms);
       return Object.assign({}, state, {winningChances:winningChances, histograms: histograms});
+    case 'BEGIN_COUNTING':
+      return Object.assign({}, state, {isCounting: true});
+    case 'COMPLETE_COUNTING':
+      return Object.assign({}, state, {isCounting: false});
     default:
       return state;
   }

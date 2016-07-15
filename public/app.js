@@ -233,7 +233,7 @@ require.register("actions/optionActions.js", function(exports, require, module) 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.addPokerStatistics = exports.changePlayerName = exports.resetOptions = exports.setPlayersAmount = undefined;
+exports.addPokerStatistics = exports.completeCounting = exports.beginCounting = exports.changePlayerName = exports.resetOptions = exports.setPlayersAmount = undefined;
 
 var _toastr = require('toastr');
 
@@ -266,16 +266,29 @@ var changePlayerName = exports.changePlayerName = function changePlayerName(play
   };
 };
 
+var beginCounting = exports.beginCounting = function beginCounting() {
+  return {
+    type: 'BEGIN_COUNTING'
+  };
+};
+
+var completeCounting = exports.completeCounting = function completeCounting() {
+  return {
+    type: 'COMPLETE_COUNTING'
+  };
+};
+
 var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
   return function (dispatch, getState) {
     if ((0, _utils.isPlayerCardsFilled)(getState().options.playersAmount, getState().cards.playerCards)) {
       var amount = (0, _utils.getBoardCardsAmount)(getState().cards.boardCards);
       if (amount === 1 || amount === 2) {
-        console.log((0, _utils.getBoardCardsAmount)(getState().cards.boardCards));
         _toastr2.default.error('Board must contain 0, 3, 4, or 5 cards.');
       } else {
+        dispatch(beginCounting());
         (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().options.playersAmount, getState().cards.playerCards, getState().cards.boardCards).then(function (pokerStatistics) {
           dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
+          dispatch(completeCounting());
         });
       }
     } else {
@@ -498,62 +511,26 @@ exports.default = _react2.default.createClass({
 });
 });
 
-require.register("components/Player.jsx", function(exports, require, module) {
-'use strict';
+require.register("components/Loader.jsx", function(exports, require, module) {
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require('react');
+var _react = require("react");
 
 var _react2 = _interopRequireDefault(_react);
 
-var _PokerTableCard = require('./PokerTableCard');
-
-var _PokerTableCard2 = _interopRequireDefault(_PokerTableCard);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function (_ref) {
-  var number = _ref.number;
-  var playerName = _ref.playerName;
-  var cards = _ref.cards;
-  var selectedCard = _ref.selectedCard;
-  var winningChances = _ref.winningChances;
-  var onSelectCard = _ref.onSelectCard;
-  var onRemoveCard = _ref.onRemoveCard;
-
-  var className = 'Player-' + number;
-  var cardNameFirst = cards['XF' + number];
-  var cardNameSecond = cards['XS' + number];
-
-  return _react2.default.createElement(
-    'div',
-    { className: className },
-    _react2.default.createElement(
-      'div',
-      { className: 'Hand' },
-      _react2.default.createElement(_PokerTableCard2.default, {
-        cardName: cardNameFirst,
-        selected: selectedCard,
-        onSelect: onSelectCard,
-        onRemove: onRemoveCard }),
-      _react2.default.createElement(_PokerTableCard2.default, {
-        cardName: cardNameSecond,
-        selected: selectedCard,
-        onSelect: onSelectCard,
-        onRemove: onRemoveCard })
-    ),
-    _react2.default.createElement(
-      'div',
-      { className: 'PlayerName' },
-      playerName,
-      ' ',
-      winningChances
-    )
-  );
+exports.default = function () {
+  return _react2.default.createElement("div", { className: "Loader" });
 };
+});
+
+;require.register("components/Player.jsx", function(exports, require, module) {
+"use strict";
 });
 
 ;require.register("components/PlayerName.jsx", function(exports, require, module) {
@@ -732,7 +709,8 @@ var App = _react2.default.createClass({
         _react2.default.createElement(_Options2.default, null),
         _react2.default.createElement(_Statistics2.default, {
           playersAmount: this.props.playersAmount,
-          playerNames: this.props.playerNames })
+          playerNames: this.props.playerNames,
+          isCounting: this.props.isCounting })
       )
     );
   }
@@ -742,7 +720,8 @@ var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.options.playersAmount,
     playerNames: state.options.playerNames,
-    selectedCard: state.cards.selectedCard
+    selectedCard: state.cards.selectedCard,
+    isCounting: state.options.isCounting
   };
 };
 
@@ -1049,6 +1028,10 @@ var _Combinations = require('components/Combinations');
 
 var _Combinations2 = _interopRequireDefault(_Combinations);
 
+var _Loader = require('components/Loader');
+
+var _Loader2 = _interopRequireDefault(_Loader);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -1057,18 +1040,27 @@ var Statistics = function Statistics(_ref) {
   var playersAmount = _ref.playersAmount;
   var playerNames = _ref.playerNames;
   var histograms = _ref.histograms;
+  var isCounting = _ref.isCounting;
 
-  return _react2.default.createElement(
-    'div',
-    { className: 'Statistics' },
-    _react2.default.createElement(_Combinations2.default, null),
-    [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
-      return _react2.default.createElement(_Histogram2.default, {
-        playerName: playerNames[i],
-        histogram: histograms[i],
-        key: 'histogram-' + i });
-    })
-  );
+  if (isCounting) {
+    return _react2.default.createElement(
+      'div',
+      { className: 'Statistics' },
+      _react2.default.createElement(_Loader2.default, null)
+    );
+  } else {
+    return _react2.default.createElement(
+      'div',
+      { className: 'Statistics' },
+      _react2.default.createElement(_Combinations2.default, null),
+      [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
+        return _react2.default.createElement(_Histogram2.default, {
+          playerName: playerNames[i],
+          histogram: histograms[i],
+          key: 'histogram-' + i });
+      })
+    );
+  }
 };
 
 var mapStateToProps = function mapStateToProps(state) {
@@ -1291,7 +1283,8 @@ exports.default = {
     playersAmount: 1,
     playerNames: ['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6', 'Player7', 'Player8', 'Player9'],
     winningChances: [],
-    histograms: []
+    histograms: [],
+    isCounting: false
   }
 };
 });
@@ -1330,6 +1323,10 @@ function optionReducer() {
       var winningChances = Array.from(action.pokerStatistics.percentages);
       var histograms = Array.from(action.pokerStatistics.histograms);
       return Object.assign({}, state, { winningChances: winningChances, histograms: histograms });
+    case 'BEGIN_COUNTING':
+      return Object.assign({}, state, { isCounting: true });
+    case 'COMPLETE_COUNTING':
+      return Object.assign({}, state, { isCounting: false });
     default:
       return state;
   }
@@ -1404,8 +1401,6 @@ var calculatePokerStatistics = exports.calculatePokerStatistics = function calcu
       }
     }
   }
-
-  console.log(_playerCards, _boardCards);
 
   return new Promise(function (resolve, reject) {
     fetch('https://dreamerrr.me/poker_calculator/count', {

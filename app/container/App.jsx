@@ -21,7 +21,8 @@ const App = React.createClass({
           <Options />
           <Statistics
             playersAmount={this.props.playersAmount}
-            playerNames={this.props.playerNames} />
+            playerNames={this.props.playerNames}
+            isCounting={this.props.isCounting} />
         </div>
       </div>
     );
@@ -31,7 +32,8 @@ const App = React.createClass({
 const mapStateToProps = (state) => ({
   playersAmount: state.options.playersAmount,
   playerNames: state.options.playerNames,
-  selectedCard: state.cards.selectedCard
+  selectedCard: state.cards.selectedCard,
+  isCounting: state.options.isCounting
 });
 
 export default connect(mapStateToProps)(App);

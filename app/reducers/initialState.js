@@ -22,6 +22,7 @@ export default {
     playersAmount: 1,
     playerNames: ['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6', 'Player7', 'Player8', 'Player9'],
     winningChances: [],
-    histograms: []
+    histograms: [],
+    isCounting: false
   }
 };

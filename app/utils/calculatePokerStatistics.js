@@ -13,8 +13,6 @@ export const calculatePokerStatistics = (playersAmount, playerCards, boardCards)
     }
   }
 
-  console.log(_playerCards, _boardCards);
-
   return new Promise((resolve, reject) => {
     fetch('https://dreamerrr.me/poker_calculator/count', {
       method: 'post',

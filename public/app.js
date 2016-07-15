@@ -503,7 +503,7 @@ exports.default = _react2.default.createClass({
         return _react2.default.createElement(
           'div',
           { key: _this.props.playerName + '-field-' + i },
-          _this.props.histogram ? _this.props.histogram[i] : '-'
+          _this.props.histogram ? _this.props.histogram[i] + '%' : '-'
         );
       })
     );
@@ -530,7 +530,62 @@ exports.default = function () {
 });
 
 ;require.register("components/Player.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _PokerTableCard = require('./PokerTableCard');
+
+var _PokerTableCard2 = _interopRequireDefault(_PokerTableCard);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function (_ref) {
+  var number = _ref.number;
+  var playerName = _ref.playerName;
+  var cards = _ref.cards;
+  var selectedCard = _ref.selectedCard;
+  var winningChances = _ref.winningChances;
+  var onSelectCard = _ref.onSelectCard;
+  var onRemoveCard = _ref.onRemoveCard;
+
+  var className = 'Player-' + number;
+  var cardNameFirst = cards['XF' + number];
+  var cardNameSecond = cards['XS' + number];
+
+  return _react2.default.createElement(
+    'div',
+    { className: className },
+    _react2.default.createElement(
+      'div',
+      { className: 'Hand' },
+      _react2.default.createElement(_PokerTableCard2.default, {
+        cardName: cardNameFirst,
+        selected: selectedCard,
+        onSelect: onSelectCard,
+        onRemove: onRemoveCard }),
+      _react2.default.createElement(_PokerTableCard2.default, {
+        cardName: cardNameSecond,
+        selected: selectedCard,
+        onSelect: onSelectCard,
+        onRemove: onRemoveCard })
+    ),
+    _react2.default.createElement(
+      'div',
+      { className: 'PlayerName' },
+      playerName,
+      ' ',
+      winningChances,
+      '%'
+    )
+  );
+};
 });
 
 ;require.register("components/PlayerName.jsx", function(exports, require, module) {
@@ -657,7 +712,33 @@ exports.default = _react2.default.createClass({
 });
 });
 
-require.register("container/App.jsx", function(exports, require, module) {
+require.register("components/SplitPotBox.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function (_ref) {
+  var splitPotChance = _ref.splitPotChance;
+
+  return _react2.default.createElement(
+    "div",
+    { className: "SplitPotBox" },
+    "Split decision ",
+    splitPotChance,
+    "%"
+  );
+};
+});
+
+;require.register("container/App.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -931,6 +1012,10 @@ var _Board = require('components/Board');
 
 var _Board2 = _interopRequireDefault(_Board);
 
+var _SplitPotBox = require('components/SplitPotBox');
+
+var _SplitPotBox2 = _interopRequireDefault(_SplitPotBox);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -963,7 +1048,8 @@ var PokerTable = function PokerTable(_ref) {
       cards: boardCards,
       selectedCard: selectedCard,
       onSelectCard: onSelectCard,
-      onRemoveCard: removeBoardCard })
+      onRemoveCard: removeBoardCard }),
+    _react2.default.createElement(_SplitPotBox2.default, { splitPotChance: winningChances[0] })
   );
 };
 

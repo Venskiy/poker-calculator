@@ -4,6 +4,7 @@ import {selectCard, removePlayerCard, removeBoardCard, removeChosenCard} from 'a
 
 import Player from 'components/Player';
 import Board from 'components/Board';
+import SplitPotBox from 'components/SplitPotBox';
 
 const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
                     selectedCard, winningChances, onSelectCard, removePlayerCard,
@@ -24,6 +25,7 @@ const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
       selectedCard={selectedCard}
       onSelectCard={onSelectCard}
       onRemoveCard={removeBoardCard} />
+    <SplitPotBox splitPotChance={winningChances[0]} />
   </div>;
 };
 

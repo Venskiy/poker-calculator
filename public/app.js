@@ -228,7 +228,15 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.addPokerStatistics = exports.changePlayerName = exports.resetOptions = exports.setPlayersAmount = undefined;
 
+var _toastr = require('toastr');
+
+var _toastr2 = _interopRequireDefault(_toastr);
+
 var _calculatePokerStatistics = require('utils/calculatePokerStatistics');
+
+var _utils = require('utils/utils');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var setPlayersAmount = exports.setPlayersAmount = function setPlayersAmount(playersAmount) {
   return {
@@ -253,9 +261,19 @@ var changePlayerName = exports.changePlayerName = function changePlayerName(play
 
 var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
   return function (dispatch, getState) {
-    (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().options.playersAmount, getState().cards.playerCards, getState().cards.boardCards).then(function (pokerStatistics) {
-      dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
-    });
+    if ((0, _utils.isPlayerCardsFilled)(getState().options.playersAmount, getState().cards.playerCards)) {
+      var amount = (0, _utils.getBoardCardsAmount)(getState().cards.boardCards);
+      if (amount === 1 || amount === 2) {
+        console.log((0, _utils.getBoardCardsAmount)(getState().cards.boardCards));
+        _toastr2.default.error('Board must contain 0, 3, 4, or 5 cards.');
+      } else {
+        (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().options.playersAmount, getState().cards.playerCards, getState().cards.boardCards).then(function (pokerStatistics) {
+          dispatch({ type: 'ADD_POKER_STATISTICS', pokerStatistics: pokerStatistics });
+        });
+      }
+    } else {
+      _toastr2.default.error("All player's positions must be filled.");
+    }
   };
 };
 });
@@ -1490,7 +1508,55 @@ var changeSelection = exports.changeSelection = function changeSelection(players
 };
 });
 
-require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {
+require.register("utils/utils.js", function(exports, require, module) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var isPlayerCardsFilled = exports.isPlayerCardsFilled = function isPlayerCardsFilled(playersAmount, playerCards) {
+  for (var i = 0; i < playersAmount; ++i) {
+    if (playerCards['XF' + (i + 1)].startsWith('X') || playerCards['XS' + (i + 1)].startsWith('X')) {
+      return false;
+    }
+  }
+  return true;
+};
+
+var getBoardCardsAmount = exports.getBoardCardsAmount = function getBoardCardsAmount(boardCards) {
+  var amount = 0;
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = Object.keys(boardCards)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var key = _step.value;
+
+      if (!boardCards[key].startsWith('X')) {
+        ++amount;
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  return amount;
+};
+});
+
+;require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 

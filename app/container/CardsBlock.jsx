@@ -5,7 +5,7 @@ import {addPokerTableCard, addChosenCard, changeSelectedCard} from 'actions/card
 import Card from 'components/Card';
 import {values, suits} from 'utils/cards';
 
-const CardsBlock = ({selectedCard, chosenCards, addPokerTableCard}) => {
+const CardsBlock = ({chosenCards, selectedCard, addPokerTableCard}) => {
   return <div className="CardsBlock">
     {suits.map(suit => {
       return <div className="CardsBlock-suit">
@@ -15,6 +15,7 @@ const CardsBlock = ({selectedCard, chosenCards, addPokerTableCard}) => {
           return <Card
                    cardName={cardName}
                    isChosen={isChosen}
+                   selectedCard={selectedCard}
                    onClickCard={addPokerTableCard} />;
         })}
       </div>;

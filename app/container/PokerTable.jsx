@@ -32,7 +32,6 @@ const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
 const mapStateToProps = (state) => ({
   playerCards: state.cards.playerCards,
   boardCards: state.cards.boardCards,
-  selectedCard: state.cards.selectedCard,
   winningChances: state.options.winningChances
 });
 

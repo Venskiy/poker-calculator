@@ -310,6 +310,10 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _toastr = require('toastr');
+
+var _toastr2 = _interopRequireDefault(_toastr);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _react2.default.createClass({
@@ -318,11 +322,20 @@ exports.default = _react2.default.createClass({
   propTypes: {
     cardName: _react2.default.PropTypes.string.isRequired,
     isChosen: _react2.default.PropTypes.bool.isRequired,
+    selectedCard: _react2.default.PropTypes.string.isRequired,
     onClickCard: _react2.default.PropTypes.func.isRequired
   },
 
   handleClick: function handleClick(cardName) {
-    this.props.isChosen ? alert('This card is already chosen.') : this.props.onClickCard(cardName);
+    if (this.props.selectedCard.startsWith('X')) {
+      if (this.props.isChosen) {
+        _toastr2.default.error('This card is already chosen.');
+      } else {
+        this.props.onClickCard(cardName);
+      }
+    } else {
+      _toastr2.default.error('All positions are filled.');
+    }
   },
   render: function render() {
     var cardName = this.props.cardName;
@@ -682,14 +695,19 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'CardsAndTable' },
-        _react2.default.createElement(_CardsBlock2.default, null),
-        _react2.default.createElement(_PokerTable2.default, { playersAmount: this.props.playersAmount, playerNames: this.props.playerNames })
+        _react2.default.createElement(_CardsBlock2.default, { selectedCard: this.props.selectedCard }),
+        _react2.default.createElement(_PokerTable2.default, {
+          playersAmount: this.props.playersAmount,
+          playerNames: this.props.playerNames,
+          selectedCard: this.props.selectedCard })
       ),
       _react2.default.createElement(
         'div',
         { className: 'OptionsAndStatistics' },
         _react2.default.createElement(_Options2.default, null),
-        _react2.default.createElement(_Statistics2.default, { playersAmount: this.props.playersAmount, playerNames: this.props.playerNames })
+        _react2.default.createElement(_Statistics2.default, {
+          playersAmount: this.props.playersAmount,
+          playerNames: this.props.playerNames })
       )
     );
   }
@@ -698,7 +716,8 @@ var App = _react2.default.createClass({
 var mapStateToProps = function mapStateToProps(state) {
   return {
     playersAmount: state.options.playersAmount,
-    playerNames: state.options.playerNames
+    playerNames: state.options.playerNames,
+    selectedCard: state.cards.selectedCard
   };
 };
 
@@ -729,8 +748,8 @@ var _cards = require('utils/cards');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var CardsBlock = function CardsBlock(_ref) {
-  var selectedCard = _ref.selectedCard;
   var chosenCards = _ref.chosenCards;
+  var selectedCard = _ref.selectedCard;
   var addPokerTableCard = _ref.addPokerTableCard;
 
   return _react2.default.createElement(
@@ -748,6 +767,7 @@ var CardsBlock = function CardsBlock(_ref) {
           return _react2.default.createElement(_Card2.default, {
             cardName: cardName,
             isChosen: isChosen,
+            selectedCard: selectedCard,
             onClickCard: addPokerTableCard });
         })
       );
@@ -950,7 +970,6 @@ var mapStateToProps = function mapStateToProps(state) {
   return {
     playerCards: state.cards.playerCards,
     boardCards: state.cards.boardCards,
-    selectedCard: state.cards.selectedCard,
     winningChances: state.options.winningChances
   };
 };
@@ -1062,7 +1081,9 @@ var _reactRedux = require('react-redux');
 
 require('jquery');
 
-require('toastr');
+var _toastr = require('toastr');
+
+var _toastr2 = _interopRequireDefault(_toastr);
 
 var _rootReducer = require('reducers/rootReducer');
 
@@ -1079,6 +1100,10 @@ var _App2 = _interopRequireDefault(_App);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 require('es6-promise').polyfill();
+
+_toastr2.default.options.closeButton = true;
+_toastr2.default.options.preventDuplicates = true;
+_toastr2.default.options.timeOut = 1300;
 
 var store = (0, _redux.createStore)(_rootReducer2.default, _initialState2.default, (0, _redux.applyMiddleware)(_reduxThunk2.default));
 

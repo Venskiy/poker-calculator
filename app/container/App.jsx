@@ -11,12 +11,17 @@ const App = React.createClass({
     return (
       <div className="Container">
         <div className="CardsAndTable">
-          <CardsBlock />
-          <PokerTable playersAmount={this.props.playersAmount} playerNames={this.props.playerNames} />
+          <CardsBlock selectedCard={this.props.selectedCard} />
+          <PokerTable
+            playersAmount={this.props.playersAmount}
+            playerNames={this.props.playerNames}
+            selectedCard={this.props.selectedCard} />
         </div>
         <div className="OptionsAndStatistics">
           <Options />
-          <Statistics playersAmount={this.props.playersAmount} playerNames={this.props.playerNames} />
+          <Statistics
+            playersAmount={this.props.playersAmount}
+            playerNames={this.props.playerNames} />
         </div>
       </div>
     );
@@ -25,7 +30,8 @@ const App = React.createClass({
 
 const mapStateToProps = (state) => ({
   playersAmount: state.options.playersAmount,
-  playerNames: state.options.playerNames
+  playerNames: state.options.playerNames,
+  selectedCard: state.cards.selectedCard
 });
 
 export default connect(mapStateToProps)(App);

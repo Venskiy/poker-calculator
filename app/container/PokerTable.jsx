@@ -8,10 +8,8 @@ import Board from 'components/Board';
 const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
                     selectedCard, winningChances, onSelectCard, removePlayerCard,
                     removeBoardCard}) => {
-  const amount = parseInt(playersAmount, 10);
-
   return <div className="PokerTable">
-    {[...Array(amount)].map((x, i) =>
+    {[...Array(playersAmount)].map((x, i) =>
       <Player
         number={i + 1}
         playerName={playerNames[i]}

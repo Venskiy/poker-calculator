@@ -7,14 +7,12 @@ import PlayersAmount from 'components/PlayersAmount';
 import PlayerName from 'components/PlayerName';
 
 const Options = ({playersAmount, playersNames, changePlayersAmount, addPokerStatistics, reset, changePlayerName}) => {
-  const amount = parseInt(playersAmount, 10);
-
   return <div className="Options">
     <div className="PlayersAmount">
       <div className="SelectText">Select the amount of players:</div>
       <div className="CustomSelect">
         <PlayersAmount
-          playersAmount={amount}
+          playersAmount={playersAmount}
           onChangePlayersAmount={changePlayersAmount} />
       </div>
     </div>
@@ -29,7 +27,7 @@ const Options = ({playersAmount, playersNames, changePlayersAmount, addPokerStat
       value="Reset"
       onClick={reset} />
     <div className="ChangeNameArea">
-      {[...Array(amount)].map((x, i) =>
+      {[...Array(playersAmount)].map((x, i) =>
           <PlayerName
             playerId={i}
             playerName={playersNames[i]}

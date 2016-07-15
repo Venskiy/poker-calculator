@@ -856,8 +856,6 @@ var Options = function Options(_ref) {
   var reset = _ref.reset;
   var changePlayerName = _ref.changePlayerName;
 
-  var amount = parseInt(playersAmount, 10);
-
   return _react2.default.createElement(
     'div',
     { className: 'Options' },
@@ -873,7 +871,7 @@ var Options = function Options(_ref) {
         'div',
         { className: 'CustomSelect' },
         _react2.default.createElement(_PlayersAmount2.default, {
-          playersAmount: amount,
+          playersAmount: playersAmount,
           onChangePlayersAmount: changePlayersAmount })
       )
     ),
@@ -890,7 +888,7 @@ var Options = function Options(_ref) {
     _react2.default.createElement(
       'div',
       { className: 'ChangeNameArea' },
-      [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
+      [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
         return _react2.default.createElement(_PlayerName2.default, {
           playerId: i,
           playerName: playersNames[i],
@@ -969,12 +967,10 @@ var PokerTable = function PokerTable(_ref) {
   var removePlayerCard = _ref.removePlayerCard;
   var removeBoardCard = _ref.removeBoardCard;
 
-  var amount = parseInt(playersAmount, 10);
-
   return _react2.default.createElement(
     'div',
     { className: 'PokerTable' },
-    [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
+    [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
       return _react2.default.createElement(_Player2.default, {
         number: i + 1,
         playerName: playerNames[i],
@@ -1062,13 +1058,11 @@ var Statistics = function Statistics(_ref) {
   var playerNames = _ref.playerNames;
   var histograms = _ref.histograms;
 
-  var amount = parseInt(playersAmount, 10);
-
   return _react2.default.createElement(
     'div',
     { className: 'Statistics' },
     _react2.default.createElement(_Combinations2.default, null),
-    [].concat(_toConsumableArray(Array(amount))).map(function (x, i) {
+    [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
       return _react2.default.createElement(_Histogram2.default, {
         playerName: playerNames[i],
         histogram: histograms[i],
@@ -1325,7 +1319,7 @@ function optionReducer() {
   var selectedCard = void 0;
   switch (action.type) {
     case 'SET_PLAYERS_AMOUNT':
-      return Object.assign({}, state, { playersAmount: action.playersAmount });
+      return Object.assign({}, state, { playersAmount: parseInt(action.playersAmount) });
     case 'RESET_OPTIONS':
       return Object.assign({}, _initialState2.default.options);
     case 'CHANGE_PLAYER_NAME':

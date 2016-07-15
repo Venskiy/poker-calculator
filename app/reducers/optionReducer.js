@@ -6,7 +6,7 @@ export default function optionReducer(state = initialState.options, action) {
   let selectedCard;
   switch (action.type) {
     case 'SET_PLAYERS_AMOUNT':
-      return Object.assign({}, state, {playersAmount: action.playersAmount});
+      return Object.assign({}, state, {playersAmount: parseInt(action.playersAmount)});
     case 'RESET_OPTIONS':
       return Object.assign({}, initialState.options);
     case 'CHANGE_PLAYER_NAME':

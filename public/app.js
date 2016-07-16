@@ -465,7 +465,38 @@ exports.default = function () {
 };
 });
 
-require.register("components/Histogram.jsx", function(exports, require, module) {
+require.register("components/Footer.jsx", function(exports, require, module) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  return _react2.default.createElement(
+    "div",
+    { className: "Footer" },
+    _react2.default.createElement(
+      "div",
+      null,
+      "Made by ",
+      _react2.default.createElement(
+        "a",
+        { href: "https://github.com/Venskiy", target: "_blank" },
+        "Venskiy Ilya"
+      )
+    )
+  );
+};
+});
+
+;require.register("components/Histogram.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -591,20 +622,24 @@ exports.default = function (_ref) {
 });
 
 ;require.register("components/PlayerName.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
+
+var _toastr = require('toastr');
+
+var _toastr2 = _interopRequireDefault(_toastr);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _react2.default.createClass({
-  displayName: "PlayerName",
+  displayName: 'PlayerName',
 
   propTypes: {
     playerId: _react2.default.PropTypes.number.isRequired,
@@ -614,22 +649,26 @@ exports.default = _react2.default.createClass({
 
   handeOnChange: function handeOnChange(playerName) {
     var name = this.refs.playerName.value;
-    this.props.onChangePlayerName(this.props.playerId, name);
+    if (name.length < 12) {
+      this.props.onChangePlayerName(this.props.playerId, name);
+    } else {
+      _toastr2.default.error("Player's name must be less than 12 characters");
+    }
   },
   render: function render() {
     return _react2.default.createElement(
-      "div",
-      { className: "ChangeName" },
+      'div',
+      { className: 'ChangeName' },
       _react2.default.createElement(
-        "p",
+        'p',
         null,
-        "Player #",
+        'Player #',
         this.props.playerId + 1,
-        ": "
+        ': '
       ),
-      _react2.default.createElement("input", {
-        ref: "playerName",
-        type: "text",
+      _react2.default.createElement('input', {
+        ref: 'playerName',
+        type: 'text',
         value: this.props.playerName,
         onChange: this.handeOnChange })
     );
@@ -779,6 +818,10 @@ var _Statistics = require('./Statistics');
 
 var _Statistics2 = _interopRequireDefault(_Statistics);
 
+var _Footer = require('components/Footer');
+
+var _Footer2 = _interopRequireDefault(_Footer);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var App = _react2.default.createClass({
@@ -804,7 +847,8 @@ var App = _react2.default.createClass({
           playerNames: this.props.playerNames,
           isCounting: this.props.isCounting }),
         _react2.default.createElement(_Options2.default, null)
-      )
+      ),
+      _react2.default.createElement(_Footer2.default, null)
     );
   }
 });

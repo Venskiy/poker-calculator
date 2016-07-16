@@ -1,4 +1,5 @@
 import React from 'react';
+import toastr from 'toastr';
 
 export default React.createClass({
   propTypes: {
@@ -9,7 +10,12 @@ export default React.createClass({
 
   handeOnChange(playerName) {
     const name = this.refs.playerName.value;
-    this.props.onChangePlayerName(this.props.playerId, name);
+    if(name.length < 12) {
+      this.props.onChangePlayerName(this.props.playerId, name);
+    }
+    else {
+      toastr.error("Player's name must be less than 12 characters");
+    }
   },
 
   render() {

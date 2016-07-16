@@ -308,6 +308,26 @@ body {
   margin: 3px;
 }
 
+.Footer {
+  flex: 0 0 25px;
+  font-size: 1.2em;
+  margin-top: 9px;
+
+  div {
+    width: 170px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  a {
+    color: #000;
+  }
+
+  a:hover {
+    color: #333;
+  }
+}
+
 .Loader {
   color: #333;
   font-size: 90px;

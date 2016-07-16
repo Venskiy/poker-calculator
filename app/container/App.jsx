@@ -5,6 +5,7 @@ import CardsBlock from './CardsBlock';
 import PokerTable from './PokerTable';
 import Options from './Options';
 import Statistics from './Statistics';
+import Footer from 'components/Footer';
 
 const App = React.createClass({
   render() {
@@ -24,6 +25,7 @@ const App = React.createClass({
             isCounting={this.props.isCounting} />
           <Options />
         </div>
+        <Footer />
       </div>
     );
   }

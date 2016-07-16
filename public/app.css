@@ -273,6 +273,23 @@ body {
   margin: 3px; }
 
 /* line 311, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Footer {
+  flex: 0 0 25px;
+  font-size: 1.2em;
+  margin-top: 9px; }
+  /* line 316, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Footer div {
+    width: 170px;
+    margin-left: auto;
+    margin-right: auto; }
+  /* line 322, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Footer a {
+    color: #000; }
+  /* line 326, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Footer a:hover {
+    color: #333; }
+
+/* line 331, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Loader {
   color: #333;
   font-size: 90px;

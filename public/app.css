@@ -48,7 +48,7 @@ body {
     border: 2px solid #6e84cf; }
   /* line 54, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Card-in {
-    background-image: url(img/delete-cross.png);
+    background-image: url(https://dreamerrr.me/media/poker/delete-cross.png);
     background-repeat: no-repeat;
     background-size: 40px;
     background-position: center;
@@ -61,7 +61,7 @@ body {
 .PokerTable {
   flex: 0 0 535px;
   display: inline-block;
-  background-image: url(img/poker-table.png);
+  background-image: url(https://dreamerrr.me/media/poker/poker-table.png);
   background-size: cover;
   background-repeat: no-repeat; }
   /* line 77, /home/ilya/dev/poker-calculator/app/style/app.scss */

@@ -379,7 +379,7 @@ exports.default = _react2.default.createClass({
   render: function render() {
     var cardName = this.props.cardName;
     var className = this.props.isChosen ? 'Card-chosen' : 'Card';
-    var path = 'img/cards/' + cardName + '.png';
+    var path = 'https://dreamerrr.me/media/poker/cards/' + cardName + '.png';
 
     return _react2.default.createElement(
       'div',
@@ -754,7 +754,7 @@ exports.default = _react2.default.createClass({
     var selectedCard = this.props.selected;
     var isSelected = cardName === selectedCard;
     var className = isSelected ? 'Card-selected' : cardName.startsWith('X') ? 'Card' : 'Card-in';
-    var path = cardName.startsWith('X') ? 'img/cards/X.png' : 'img/cards/' + cardName + '.png';
+    var path = cardName.startsWith('X') ? 'https://dreamerrr.me/media/poker/cards/X.png' : 'https://dreamerrr.me/media/poker/cards/' + cardName + '.png';
 
     return _react2.default.createElement(
       'div',

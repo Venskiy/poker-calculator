@@ -26,7 +26,7 @@ export default React.createClass({
   render() {
     const cardName = this.props.cardName;
     const className = this.props.isChosen ? 'Card-chosen' : 'Card';
-    const path = `img/cards/${cardName}.png`;
+    const path = `https://dreamerrr.me/media/poker/cards/${cardName}.png`;
 
     return <div className={className} onClick={this.handleClick.bind(this, cardName)}>
       <img src={path} />

@@ -17,7 +17,7 @@ export default React.createClass({
     const selectedCard = this.props.selected;
     const isSelected = cardName === selectedCard;
     const className = isSelected ? 'Card-selected' : (cardName.startsWith('X') ? 'Card' : 'Card-in');
-    const path = cardName.startsWith('X') ? 'img/cards/X.png' : `img/cards/${cardName}.png`;
+    const path = cardName.startsWith('X') ? 'https://dreamerrr.me/media/poker/cards/X.png' : `https://dreamerrr.me/media/poker/cards/${cardName}.png`;
 
     return <div className={className} onClick={this.handleClick.bind(this, cardName)}>
       <img src={path} />

@@ -1,5 +1,7 @@
 require('es6-promise').polyfill();
 
+import 'style/app.scss';
+
 import ReactDOM from 'react-dom';
 import React from 'react';
 import {createStore, applyMiddleware} from 'redux';
@@ -19,10 +21,13 @@ toastr.options.timeOut =1300;
 const store = createStore(rootReducer, initialState, applyMiddleware(thunkMiddleware));
 
 document.addEventListener('DOMContentLoaded', () => {
+  const el = document.createElement('div');
+  el.id = 'app';
+  document.body.appendChild(el);
   ReactDOM.render(
     <Provider store={store}>
         <App />
     </Provider>,
-    document.querySelector('#app')
+    el
   );
 });

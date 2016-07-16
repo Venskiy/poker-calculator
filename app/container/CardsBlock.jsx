@@ -8,7 +8,7 @@ import {values, suits} from 'utils/cards';
 const CardsBlock = ({chosenCards, selectedCard, addPokerTableCard}) => {
   return <div className="CardsBlock">
     {suits.map(suit => {
-      return <div className="CardsBlock-suit">
+      return <div className="CardsBlock-suit" key={suit}>
         {values.map(value => {
           const cardName = value + suit;
           const isChosen = chosenCards.findIndex(card => card === cardName) > -1;
@@ -16,7 +16,8 @@ const CardsBlock = ({chosenCards, selectedCard, addPokerTableCard}) => {
                    cardName={cardName}
                    isChosen={isChosen}
                    selectedCard={selectedCard}
-                   onClickCard={addPokerTableCard} />;
+                   onClickCard={addPokerTableCard}
+                   key={cardName} />;
         })}
       </div>;
     })}

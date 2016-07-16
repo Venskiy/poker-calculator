@@ -24,7 +24,8 @@ const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
         selectedCard={selectedCard}
         winningChances={winningChances[i + 1]}
         onSelectCard={onSelectCard}
-        onRemoveCard={removePlayerCard} />
+        onRemoveCard={removePlayerCard}
+        key={i} />
     )}
   </div>;
 };

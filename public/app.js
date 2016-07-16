@@ -331,7 +331,8 @@ exports.default = function (_ref) {
         cardName: cards['XB' + (i + 1)],
         selected: selectedCard,
         onSelect: onSelectCard,
-        onRemove: onRemoveCard });
+        onRemove: onRemoveCard,
+        key: cards['XB' + (i + 1)] });
     })
   );
 };
@@ -899,7 +900,7 @@ var CardsBlock = function CardsBlock(_ref) {
     _cards.suits.map(function (suit) {
       return _react2.default.createElement(
         'div',
-        { className: 'CardsBlock-suit' },
+        { className: 'CardsBlock-suit', key: suit },
         _cards.values.map(function (value) {
           var cardName = value + suit;
           var isChosen = chosenCards.findIndex(function (card) {
@@ -909,7 +910,8 @@ var CardsBlock = function CardsBlock(_ref) {
             cardName: cardName,
             isChosen: isChosen,
             selectedCard: selectedCard,
-            onClickCard: addPokerTableCard });
+            onClickCard: addPokerTableCard,
+            key: cardName });
         })
       );
     })
@@ -1104,7 +1106,8 @@ var PokerTable = function PokerTable(_ref) {
         selectedCard: selectedCard,
         winningChances: winningChances[i + 1],
         onSelectCard: onSelectCard,
-        onRemoveCard: removePlayerCard });
+        onRemoveCard: removePlayerCard,
+        key: i });
     })
   );
 };
@@ -1217,6 +1220,8 @@ exports.default = (0, _reactRedux.connect)(mapStateToProps)(Statistics);
 require.register("initialize.js", function(exports, require, module) {
 'use strict';
 
+require('style/app.scss');
+
 var _reactDom = require('react-dom');
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
@@ -1262,11 +1267,14 @@ _toastr2.default.options.timeOut = 1300;
 var store = (0, _redux.createStore)(_rootReducer2.default, _initialState2.default, (0, _redux.applyMiddleware)(_reduxThunk2.default));
 
 document.addEventListener('DOMContentLoaded', function () {
+  var el = document.createElement('div');
+  el.id = 'app';
+  document.body.appendChild(el);
   _reactDom2.default.render(_react2.default.createElement(
     _reactRedux.Provider,
     { store: store },
     _react2.default.createElement(_App2.default, null)
-  ), document.querySelector('#app'));
+  ), el);
 });
 });
 
@@ -1502,7 +1510,11 @@ var rootReducer = (0, _redux.combineReducers)({
 exports.default = rootReducer;
 });
 
-require.register("utils/calculatePokerStatistics.js", function(exports, require, module) {
+require.register("style/app.scss.js", function(exports, require, module) {
+"use strict";
+});
+
+;require.register("utils/calculatePokerStatistics.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

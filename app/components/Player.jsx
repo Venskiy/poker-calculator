@@ -18,7 +18,7 @@ export default ({number, playerName, cards, selectedCard, winningChances, onSele
         cardName={cardNameSecond}
         selected={selectedCard}
         onSelect={onSelectCard}
-        onRemove={onRemoveCard}/>
+        onRemove={onRemoveCard} />
     </div>
     <div className="PlayerName">{playerName}</div>
     <div className="WinningChances">

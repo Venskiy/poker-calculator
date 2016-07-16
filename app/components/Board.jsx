@@ -9,7 +9,8 @@ export default ({cards, selectedCard, onSelectCard, onRemoveCard}) => {
         cardName={cards[`XB${i + 1}`]}
         selected={selectedCard}
         onSelect={onSelectCard}
-        onRemove={onRemoveCard}/>
+        onRemove={onRemoveCard}
+        key={cards[`XB${i + 1}`]} />
     )}
   </div>
 }

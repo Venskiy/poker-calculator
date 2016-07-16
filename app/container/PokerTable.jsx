@@ -10,6 +10,12 @@ const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
                     selectedCard, winningChances, onSelectCard, removePlayerCard,
                     removeBoardCard}) => {
   return <div className="PokerTable">
+    <SplitPotBox splitPotChance={winningChances[0]} />
+    <Board
+      cards={boardCards}
+      selectedCard={selectedCard}
+      onSelectCard={onSelectCard}
+      onRemoveCard={removeBoardCard} />
     {[...Array(playersAmount)].map((x, i) =>
       <Player
         number={i + 1}
@@ -20,12 +26,6 @@ const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
         onSelectCard={onSelectCard}
         onRemoveCard={removePlayerCard} />
     )}
-    <Board
-      cards={boardCards}
-      selectedCard={selectedCard}
-      onSelectCard={onSelectCard}
-      onRemoveCard={removeBoardCard} />
-    <SplitPotBox splitPotChance={winningChances[0]} />
   </div>;
 };
 

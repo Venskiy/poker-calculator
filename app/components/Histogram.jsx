@@ -11,7 +11,7 @@ export default React.createClass({
       <div>{this.props.playerName}</div>
       {[...Array(10)].map((x, i) =>
         <div key={`${this.props.playerName}-field-${i}`}>
-          { this.props.histogram ? `${this.props.histogram[i]}%` : '-' }
+          {this.props.histogram ? `${this.props.histogram[i]}%` : '-'}
         </div>
       )}
     </div>

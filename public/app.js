@@ -579,10 +579,12 @@ exports.default = function (_ref) {
     _react2.default.createElement(
       'div',
       { className: 'PlayerName' },
-      playerName,
-      ' ',
-      winningChances,
-      '%'
+      playerName
+    ),
+    _react2.default.createElement(
+      'div',
+      { className: 'WinningChances' },
+      winningChances === undefined ? '' : winningChances + '%'
     )
   );
 };
@@ -615,11 +617,22 @@ exports.default = _react2.default.createClass({
     this.props.onChangePlayerName(this.props.playerId, name);
   },
   render: function render() {
-    return _react2.default.createElement("input", {
-      ref: "playerName",
-      type: "text",
-      value: this.props.playerName,
-      onChange: this.handeOnChange });
+    return _react2.default.createElement(
+      "div",
+      { className: "ChangeName" },
+      _react2.default.createElement(
+        "p",
+        null,
+        "Player #",
+        this.props.playerId + 1,
+        ": "
+      ),
+      _react2.default.createElement("input", {
+        ref: "playerName",
+        type: "text",
+        value: this.props.playerName,
+        onChange: this.handeOnChange })
+    );
   }
 });
 });
@@ -713,13 +726,13 @@ exports.default = _react2.default.createClass({
 });
 
 require.register("components/SplitPotBox.jsx", function(exports, require, module) {
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
@@ -729,11 +742,10 @@ exports.default = function (_ref) {
   var splitPotChance = _ref.splitPotChance;
 
   return _react2.default.createElement(
-    "div",
-    { className: "SplitPotBox" },
-    "Split decision ",
-    splitPotChance,
-    "%"
+    'div',
+    { className: 'SplitPotBox' },
+    'Split decision: ',
+    splitPotChance ? splitPotChance + '%' : '-'
   );
 };
 });
@@ -787,11 +799,11 @@ var App = _react2.default.createClass({
       _react2.default.createElement(
         'div',
         { className: 'OptionsAndStatistics' },
-        _react2.default.createElement(_Options2.default, null),
         _react2.default.createElement(_Statistics2.default, {
           playersAmount: this.props.playersAmount,
           playerNames: this.props.playerNames,
-          isCounting: this.props.isCounting })
+          isCounting: this.props.isCounting }),
+        _react2.default.createElement(_Options2.default, null)
       )
     );
   }
@@ -1034,6 +1046,12 @@ var PokerTable = function PokerTable(_ref) {
   return _react2.default.createElement(
     'div',
     { className: 'PokerTable' },
+    _react2.default.createElement(_SplitPotBox2.default, { splitPotChance: winningChances[0] }),
+    _react2.default.createElement(_Board2.default, {
+      cards: boardCards,
+      selectedCard: selectedCard,
+      onSelectCard: onSelectCard,
+      onRemoveCard: removeBoardCard }),
     [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
       return _react2.default.createElement(_Player2.default, {
         number: i + 1,
@@ -1043,13 +1061,7 @@ var PokerTable = function PokerTable(_ref) {
         winningChances: winningChances[i + 1],
         onSelectCard: onSelectCard,
         onRemoveCard: removePlayerCard });
-    }),
-    _react2.default.createElement(_Board2.default, {
-      cards: boardCards,
-      selectedCard: selectedCard,
-      onSelectCard: onSelectCard,
-      onRemoveCard: removeBoardCard }),
-    _react2.default.createElement(_SplitPotBox2.default, { splitPotChance: winningChances[0] })
+    })
   );
 };
 

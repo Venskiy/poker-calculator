@@ -20,6 +20,9 @@ export default ({number, playerName, cards, selectedCard, winningChances, onSele
         onSelect={onSelectCard}
         onRemove={onRemoveCard}/>
     </div>
-    <div className="PlayerName">{playerName} {winningChances}%</div>
+    <div className="PlayerName">{playerName}</div>
+    <div className="WinningChances">
+      {(winningChances === undefined) ? '' : `${winningChances}%`}
+    </div>
   </div>;
 }

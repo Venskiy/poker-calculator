@@ -11,19 +11,19 @@ body {
 
 /* line 12, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .CardsAndTable {
-  flex: 0 0 325px;
+  flex: 0 0 260px;
   display: flex;
   flex-direction: row;
   justify-content: center;
   margin-top: 15px; }
   /* line 19, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .CardsAndTable img {
-    width: 49px;
-    height: 70px; }
+    width: 40px;
+    height: 58px; }
 
 /* line 25, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .CardsBlock {
-  flex: 0 0 693px;
+  flex: 0 0 570px;
   display: flex;
   justify-content: space-between;
   flex-direction: column; }
@@ -35,22 +35,22 @@ body {
 
 /* line 38, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Card, .Card-chosen, .Card-in {
-  width: 49px;
-  height: 70px;
+  width: 40px;
+  height: 58px;
   border: 1px solid #333; }
   /* line 43, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Card-chosen {
     opacity: 0.2; }
   /* line 48, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Card-selected {
-    width: 49px;
-    height: 70px;
-    border: 3px solid #6e84cf; }
+    width: 40px;
+    height: 58px;
+    border: 2px solid #6e84cf; }
   /* line 54, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Card-in {
     background-image: url(img/delete-cross.png);
     background-repeat: no-repeat;
-    background-size: 47px;
+    background-size: 40px;
     background-position: center;
     margin: 1px; }
   /* line 64, /home/ilya/dev/poker-calculator/app/style/app.scss */
@@ -59,107 +59,153 @@ body {
 
 /* line 70, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .PokerTable {
-  flex: 0 0 650px;
+  flex: 0 0 535px;
+  display: inline-block;
   background-image: url(img/poker-table.png);
   background-size: cover;
   background-repeat: no-repeat; }
-  /* line 76, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  /* line 77, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .PokerTable .Card, .PokerTable .Card-chosen, .PokerTable .Card-in {
-    padding: 3px;
+    padding: 2px;
     border: 0px; }
 
-/* line 82, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 83, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Player, .Player-1, .Player-2, .Player-3, .Player-4, .Player-5, .Player-6, .Player-7, .Player-8, .Player-9 {
-  width: 120px;
-  height: 105px;
-  position: absolute; }
-  /* line 87, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  width: 100px;
+  height: 100px;
+  display: inline-block;
+  position: relative; }
+  /* line 89, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-1 {
-    left: 810px;
-    top: 0px; }
-  /* line 93, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: 90px;
+    top: -93px; }
+  /* line 95, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-2 {
-    left: 710px;
-    top: 80px; }
-  /* line 99, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: -98px;
+    top: -23px; }
+  /* line 101, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-3 {
-    left: 710px;
-    top: 180px; }
-  /* line 105, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: -190px;
+    top: 78px; }
+  /* line 107, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-4 {
-    left: 830px;
-    top: 230px; }
-  /* line 111, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: -188px;
+    top: 92px; }
+  /* line 113, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-5 {
-    left: 970px;
-    top: 230px; }
-  /* line 117, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: -184px;
+    top: 92px; }
+  /* line 119, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-6 {
-    left: 1110px;
-    top: 230px; }
-  /* line 123, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: 321px;
+    top: -9px; }
+  /* line 125, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-7 {
-    left: 1230px;
-    top: 180px; }
-  /* line 129, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: 325px;
+    top: -22px; }
+  /* line 131, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-8 {
-    left: 1230px;
-    top: 80px; }
-  /* line 135, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    left: 237px;
+    top: -123px; }
+  /* line 137, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .Player-9 {
-    left: 1135px;
-    top: 0px; }
+    left: 51px;
+    top: -194px; }
 
-/* line 142, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 144, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Hand {
   display: flex;
   justify-content: center;
-  width: 120px;
-  height: 80px; }
+  width: 100px;
+  height: 65px; }
 
-/* line 149, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 151, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .PlayerName {
   text-align: center;
-  font-size: 1.1em;
-  color: #f2f2f2; }
+  color: #0091ff;
+  height: 17px; }
 
-/* line 155, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 157, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.WinningChances {
+  text-align: center;
+  color: #0091ff; }
+
+/* line 162, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Board {
   display: flex;
-  justify-content: center;
   position: relative;
-  width: 300px;
-  height: 75px;
-  left: 184px;
-  top: 120px; }
-
-/* line 165, /home/ilya/dev/poker-calculator/app/style/app.scss */
-.SplitPotBox {
-  position: absolute;
-  left: 1000px;
-  top: 110px; }
+  width: 230px;
+  height: 62px;
+  left: 161px;
+  top: 81px; }
 
 /* line 171, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.SplitPotBox {
+  display: inline-block;
+  position: relative;
+  width: 140px;
+  left: 223px;
+  top: 80px;
+  color: #0091ff; }
+
+/* line 180, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .OptionsAndStatistics {
   flex: 0 0 330px;
   display: flex;
-  justify-content: center;
-  flex-direction: row; }
+  justify-content: space-between;
+  flex-direction: row;
+  width: 1105px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 30px; }
 
-/* line 178, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 191, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Statistics {
+  flex: 0 0 800px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start; }
+
+/* line 198, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Combinations {
+  flex: 0 0 87px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; }
+  /* line 204, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Combinations div {
+    text-align: center;
+    border: 1px solid black;
+    font-size: 12px; }
+
+/* line 211, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.Histogram {
+  flex: 0 0 76px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 3px; }
+  /* line 218, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .Histogram div {
+    height: 15px;
+    text-align: center;
+    border: 1px solid black;
+    font-size: 12px; }
+
+/* line 226, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Options {
-  flex: 0 0 280px; }
+  flex: 0 0 285px; }
 
-/* line 182, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 230, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .PlayersAmount {
   margin: 7px; }
 
-/* line 186, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 234, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .SelectText {
   float: left;
   font-size: 20px; }
 
-/* line 191, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 239, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .CustomSelect {
   padding: 0;
   margin: 0;
@@ -169,7 +215,7 @@ body {
   overflow: hidden;
   background-color: #fff;
   background: #fff url("http://www.scottgood.com/jsg/blog.nsf/images/arrowdown.gif") no-repeat 90% 50%; }
-  /* line 201, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  /* line 249, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .CustomSelect select {
     padding: 5px 8px;
     width: 130%;
@@ -180,11 +226,11 @@ body {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none; }
-  /* line 213, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  /* line 261, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .CustomSelect select:focus {
     outline: none; }
 
-/* line 218, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 266, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .CustomButton {
   border-radius: 24px;
   font-family: Arial;
@@ -195,55 +241,38 @@ body {
   margin: 5px;
   border: solid #000000 1px;
   text-decoration: none; }
-  /* line 229, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  /* line 277, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .CustomButton:hover {
     background: #d6dee3;
     text-decoration: none; }
-  /* line 234, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  /* line 282, /home/ilya/dev/poker-calculator/app/style/app.scss */
   .CustomButton:focus {
     outline: none; }
 
-/* line 240, /home/ilya/dev/poker-calculator/app/style/app.scss */
-.ChangeNameArea input {
-  border-radius: 5px;
-  border: 1px solid #333;
-  padding: 2px;
-  margin: 2px; }
-  /* line 246, /home/ilya/dev/poker-calculator/app/style/app.scss */
-  .ChangeNameArea input:focus {
-    outline: none; }
-
-/* line 252, /home/ilya/dev/poker-calculator/app/style/app.scss */
-.Statistics {
-  flex: 0 0 1050px;
+/* line 287, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.ChangeNameArea {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start; }
+  flex-direction: column; }
+  /* line 291, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .ChangeNameArea p {
+    float: left;
+    margin: 0; }
+  /* line 295, /home/ilya/dev/poker-calculator/app/style/app.scss */
+  .ChangeNameArea input {
+    border-radius: 5px;
+    border: 1px solid #333;
+    margin-bottom: 3px;
+    margin-left: 7px; }
+    /* line 301, /home/ilya/dev/poker-calculator/app/style/app.scss */
+    .ChangeNameArea input:focus {
+      outline: none; }
 
-/* line 259, /home/ilya/dev/poker-calculator/app/style/app.scss */
-.Combinations {
-  flex: 0 0 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; }
-  /* line 265, /home/ilya/dev/poker-calculator/app/style/app.scss */
-  .Combinations div {
-    text-align: center;
-    border: 1px solid black; }
+/* line 306, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.ChangeName {
+  display: inline;
+  margin: 3px; }
 
-/* line 271, /home/ilya/dev/poker-calculator/app/style/app.scss */
-.Histogram {
-  flex: 0 0 90px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  margin-left: 3px; }
-  /* line 278, /home/ilya/dev/poker-calculator/app/style/app.scss */
-  .Histogram div {
-    text-align: center;
-    border: 1px solid black; }
-
-/* line 284, /home/ilya/dev/poker-calculator/app/style/app.scss */
+/* line 311, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Loader {
   color: #333;
   font-size: 90px;
@@ -252,7 +281,7 @@ body {
   width: 1em;
   height: 1em;
   border-radius: 50%;
-  margin: 96px auto;
+  margin: 125px auto;
   position: relative;
   -webkit-transform: translateZ(0);
   -ms-transform: translateZ(0);

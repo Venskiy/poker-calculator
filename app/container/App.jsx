@@ -18,11 +18,11 @@ const App = React.createClass({
             selectedCard={this.props.selectedCard} />
         </div>
         <div className="OptionsAndStatistics">
-          <Options />
           <Statistics
             playersAmount={this.props.playersAmount}
             playerNames={this.props.playerNames}
             isCounting={this.props.isCounting} />
+          <Options />
         </div>
       </div>
     );

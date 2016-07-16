@@ -10,20 +10,20 @@ body {
 }
 
 .CardsAndTable {
-  flex: 0 0 325px;
+  flex: 0 0 260px;
   display: flex;
   flex-direction: row;
   justify-content: center;
   margin-top: 15px;
 
   img {
-    width: 49px;
-    height: 70px;
+    width: 40px;
+    height: 58px;
   }
 }
 
 .CardsBlock {
-  flex: 0 0 693px;
+  flex: 0 0 570px;
   display:flex;
   justify-content: space-between;
   flex-direction: column;
@@ -36,8 +36,8 @@ body {
 }
 
 .Card {
-  width: 49px;
-  height: 70px;
+  width: 40px;
+  height: 58px;
   border: 1px solid #333;
 
   &-chosen {
@@ -46,16 +46,16 @@ body {
   }
 
   &-selected {
-    width: 49px;
-    height: 70px;
-    border: 3px solid #6e84cf;
+    width: 40px;
+    height: 58px;
+    border: 2px solid #6e84cf;
   }
 
   &-in {
     @extend .Card;
     background-image: url(img/delete-cross.png);
     background-repeat: no-repeat;
-    background-size: 47px;
+    background-size: 40px;
     background-position: center;
     margin: 1px;
   }
@@ -68,115 +68,163 @@ body {
 }
 
 .PokerTable {
-  flex: 0 0 650px;
+  flex: 0 0 535px;
+  display: inline-block;
   background-image: url(img/poker-table.png);
   background-size: cover;
   background-repeat: no-repeat;
 
   .Card {
-    padding: 3px;
+    padding: 2px;
     border: 0px;
   }
 }
 
 .Player {
-  width: 120px;
-  height: 105px;
-  position: absolute;
+  width: 100px;
+  height: 100px;
+  display: inline-block;
+  position: relative;
 
   &-1 {
     @extend .Player;
-    left: 810px;
-    top: 0px;
+    left: 90px;
+    top: -93px;
   }
 
   &-2 {
     @extend .Player;
-    left: 710px;
-    top: 80px;
+    left: -98px;
+    top: -23px;
   }
 
   &-3 {
     @extend .Player;
-    left: 710px;
-    top: 180px;
+    left: -190px;
+    top: 78px;
   }
 
   &-4 {
     @extend .Player;
-    left: 830px;
-    top: 230px;
+    left: -188px;
+    top: 92px;
   }
 
   &-5 {
     @extend .Player;
-    left: 970px;
-    top: 230px;
+    left: -184px;
+    top: 92px;
   }
 
   &-6 {
     @extend .Player;
-    left: 1110px;
-    top: 230px;
+    left: 321px;
+    top: -9px;
   }
 
   &-7 {
     @extend .Player;
-    left: 1230px;
-    top: 180px;
+    left: 325px;
+    top: -22px;
   }
 
   &-8 {
     @extend .Player;
-    left: 1230px;
-    top: 80px;
+    left: 237px;
+    top: -123px;
   }
 
   &-9 {
     @extend .Player;
-    left: 1135px;
-    top: 0px;
+    left: 51px;
+    top: -194px;
   }
 }
 
 .Hand {
   display: flex;
   justify-content: center;
-  width: 120px;
-  height: 80px;
+  width: 100px;
+  height: 65px;
 }
 
 .PlayerName {
   text-align: center;
-  font-size: 1.1em;
-  color: #f2f2f2;
+  color: #0091ff;
+  height: 17px;
+}
+
+.WinningChances {
+  text-align: center;
+  color: #0091ff;
 }
 
 .Board {
   display: flex;
-  justify-content: center;
   position: relative;
-  width: 300px;
-  height: 75px;
-  left: 184px;
-  top: 120px;
+  width: 230px;
+  height: 62px;
+  left: 161px;
+  top: 81px;
 }
 
 .SplitPotBox {
-  position: absolute;
-  left: 1000px;
-  top: 110px;
+  display: inline-block;
+  position: relative;
+  width: 140px;
+  left: 223px;
+  top: 80px;
+  color: #0091ff;
 }
 
 .OptionsAndStatistics {
   flex: 0 0 330px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   flex-direction: row;
+  width: 1105px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 30px;
+}
+
+.Statistics {
+  flex: 0 0 800px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.Combinations {
+  flex: 0 0 87px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  div {
+    text-align: center;
+    border: 1px solid black;
+    font-size: 12px;
+  }
+}
+
+.Histogram {
+  flex: 0 0 76px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 3px;
+
+  div {
+    height: 15px;
+    text-align: center;
+    border: 1px solid black;
+    font-size: 12px;
+  }
 }
 
 .Options {
-  flex: 0 0 280px;
+  flex: 0 0 285px;
 }
 
 .PlayersAmount {
@@ -237,48 +285,27 @@ body {
 }
 
 .ChangeNameArea {
+  display: flex;
+  flex-direction: column;
+
+  p {
+    float: left;
+    margin: 0;
+  }
   input {
     border-radius: 5px;
     border: 1px solid #333;
-    padding: 2px;
-    margin: 2px;
+    margin-bottom: 3px;
+    margin-left: 7px;
 
     &:focus {
       outline: none;
     }
   }
 }
-
-.Statistics {
-  flex: 0 0 1050px;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-}
-
-.Combinations {
-  flex: 0 0 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  div {
-    text-align: center;
-    border: 1px solid black;
-  }
-}
-
-.Histogram {
-  flex: 0 0 90px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  margin-left: 3px;
-
-  div {
-    text-align: center;
-    border: 1px solid black;
-  }
+.ChangeName {
+  display: inline;
+  margin: 3px;
 }
 
 .Loader {
@@ -289,7 +316,7 @@ body {
   width: 1em;
   height: 1em;
   border-radius: 50%;
-  margin: 96px auto;
+  margin: 125px auto;
   position: relative;
   -webkit-transform: translateZ(0);
   -ms-transform: translateZ(0);

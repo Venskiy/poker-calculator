@@ -1238,6 +1238,8 @@ var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
 var _reactRedux = require('react-redux');
 
+require('whatwg-fetch');
+
 require('jquery');
 
 var _toastr = require('toastr');
@@ -1259,6 +1261,7 @@ var _App2 = _interopRequireDefault(_App);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 require('es6-promise').polyfill();
+require('whatwg-fetch');
 
 _toastr2.default.options.closeButton = true;
 _toastr2.default.options.preventDuplicates = true;

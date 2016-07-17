@@ -1,4 +1,5 @@
 require('es6-promise').polyfill();
+require('whatwg-fetch')
 
 import 'style/app.scss';
 
@@ -7,6 +8,7 @@ import React from 'react';
 import {createStore, applyMiddleware} from 'redux';
 import thunkMiddleware from 'redux-thunk';
 import {Provider} from 'react-redux';
+import 'whatwg-fetch';
 import 'jquery';
 import toastr from 'toastr';
 

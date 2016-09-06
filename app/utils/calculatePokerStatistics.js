@@ -14,7 +14,7 @@ export const calculatePokerStatistics = (playersAmount, playerCards, boardCards)
   }
 
   return new Promise((resolve, reject) => {
-    fetch('https://dreamerrr.me/poker_calculator/count', {
+    fetch('http://dreamerrr.me/poker_calculator/count', {
       method: 'post',
       body: JSON.stringify({
         playersCards: _playerCards,

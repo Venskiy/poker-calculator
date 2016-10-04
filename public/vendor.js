@@ -150,6 +150,1583 @@ var __makeRelativeRequire = function(require, mappings, pref) {
   }
 };
 
+require.register("base64-js/lib/b64.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "base64-js");
+  (function() {
+    'use strict'
+
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+function init () {
+  var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  for (var i = 0, len = code.length; i < len; ++i) {
+    lookup[i] = code[i]
+    revLookup[code.charCodeAt(i)] = i
+  }
+
+  revLookup['-'.charCodeAt(0)] = 62
+  revLookup['_'.charCodeAt(0)] = 63
+}
+
+init()
+
+function toByteArray (b64) {
+  var i, j, l, tmp, placeHolders, arr
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // the number of equal signs (place holders)
+  // if there are two placeholders, than the two characters before it
+  // represent one byte
+  // if there is only one, then the three characters before it represent 2 bytes
+  // this is just a cheap hack to not do indexOf twice
+  placeHolders = b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+
+  // base64 is 4/3 + up to two characters of the original data
+  arr = new Arr(len * 3 / 4 - placeHolders)
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  l = placeHolders > 0 ? len - 4 : len
+
+  var L = 0
+
+  for (i = 0, j = 0; i < l; i += 4, j += 3) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+    arr[L++] = (tmp >> 16) & 0xFF
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  if (placeHolders === 2) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[L++] = tmp & 0xFF
+  } else if (placeHolders === 1) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var output = ''
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    output += lookup[tmp >> 2]
+    output += lookup[(tmp << 4) & 0x3F]
+    output += '=='
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
+    output += lookup[tmp >> 10]
+    output += lookup[(tmp >> 4) & 0x3F]
+    output += lookup[(tmp << 2) & 0x3F]
+    output += '='
+  }
+
+  parts.push(output)
+
+  return parts.join('')
+}
+  })();
+});
+
+require.register("buffer/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "buffer");
+  var _Buffer = require('buffer'); var Buffer = _Buffer && _Buffer.Buffer;
+(function() {
+    /*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+'use strict'
+
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+var isArray = require('isarray')
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+Buffer.poolSize = 8192 // not used by this implementation
+
+var rootParent = {}
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Due to various browser bugs, sometimes the Object implementation will be used even
+ * when the browser supports typed arrays.
+ *
+ * Note:
+ *
+ *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+ *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *     incorrect length in some situations.
+
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+ * get the Object implementation, which is slower but behaves correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
+  ? global.TYPED_ARRAY_SUPPORT
+  : typedArraySupport()
+
+function typedArraySupport () {
+  try {
+    var arr = new Uint8Array(1)
+    arr.foo = function () { return 42 }
+    return arr.foo() === 42 && // typed array instances can be augmented
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+  } catch (e) {
+    return false
+  }
+}
+
+function kMaxLength () {
+  return Buffer.TYPED_ARRAY_SUPPORT
+    ? 0x7fffffff
+    : 0x3fffffff
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+function Buffer (arg) {
+  if (!(this instanceof Buffer)) {
+    // Avoid going through an ArgumentsAdaptorTrampoline in the common case.
+    if (arguments.length > 1) return new Buffer(arg, arguments[1])
+    return new Buffer(arg)
+  }
+
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    this.length = 0
+    this.parent = undefined
+  }
+
+  // Common case.
+  if (typeof arg === 'number') {
+    return fromNumber(this, arg)
+  }
+
+  // Slightly less common case.
+  if (typeof arg === 'string') {
+    return fromString(this, arg, arguments.length > 1 ? arguments[1] : 'utf8')
+  }
+
+  // Unusual.
+  return fromObject(this, arg)
+}
+
+// TODO: Legacy, not needed anymore. Remove in next major version.
+Buffer._augment = function (arr) {
+  arr.__proto__ = Buffer.prototype
+  return arr
+}
+
+function fromNumber (that, length) {
+  that = allocate(that, length < 0 ? 0 : checked(length) | 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < length; i++) {
+      that[i] = 0
+    }
+  }
+  return that
+}
+
+function fromString (that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') encoding = 'utf8'
+
+  // Assumption: byteLength() return value is always < kMaxLength.
+  var length = byteLength(string, encoding) | 0
+  that = allocate(that, length)
+
+  that.write(string, encoding)
+  return that
+}
+
+function fromObject (that, object) {
+  if (Buffer.isBuffer(object)) return fromBuffer(that, object)
+
+  if (isArray(object)) return fromArray(that, object)
+
+  if (object == null) {
+    throw new TypeError('must start with number, buffer, array or string')
+  }
+
+  if (typeof ArrayBuffer !== 'undefined') {
+    if (object.buffer instanceof ArrayBuffer) {
+      return fromTypedArray(that, object)
+    }
+    if (object instanceof ArrayBuffer) {
+      return fromArrayBuffer(that, object)
+    }
+  }
+
+  if (object.length) return fromArrayLike(that, object)
+
+  return fromJsonObject(that, object)
+}
+
+function fromBuffer (that, buffer) {
+  var length = checked(buffer.length) | 0
+  that = allocate(that, length)
+  buffer.copy(that, 0, 0, length)
+  return that
+}
+
+function fromArray (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+// Duplicate of fromArray() to keep fromArray() monomorphic.
+function fromTypedArray (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  // Truncating the elements is probably not what people expect from typed
+  // arrays with BYTES_PER_ELEMENT > 1 but it's compatible with the behavior
+  // of the old Buffer constructor.
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+function fromArrayBuffer (that, array) {
+  array.byteLength // this throws if `array` is not a valid ArrayBuffer
+
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = new Uint8Array(array)
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that = fromTypedArray(that, new Uint8Array(array))
+  }
+  return that
+}
+
+function fromArrayLike (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+// Deserialize { type: 'Buffer', data: [1,2,3,...] } into a Buffer object.
+// Returns a zero-length buffer for inputs that don't conform to the spec.
+function fromJsonObject (that, object) {
+  var array
+  var length = 0
+
+  if (object.type === 'Buffer' && isArray(object.data)) {
+    array = object.data
+    length = checked(array.length) | 0
+  }
+  that = allocate(that, length)
+
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype
+  Buffer.__proto__ = Uint8Array
+} else {
+  // pre-set for values that may exist in the future
+  Buffer.prototype.length = undefined
+  Buffer.prototype.parent = undefined
+}
+
+function allocate (that, length) {
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = new Uint8Array(length)
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that.length = length
+  }
+
+  var fromPool = length !== 0 && length <= Buffer.poolSize >>> 1
+  if (fromPool) that.parent = rootParent
+
+  return that
+}
+
+function checked (length) {
+  // Note: cannot use `length < kMaxLength` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= kMaxLength()) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (subject, encoding) {
+  if (!(this instanceof SlowBuffer)) return new SlowBuffer(subject, encoding)
+
+  var buf = new Buffer(subject, encoding)
+  delete buf.parent
+  return buf
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return !!(b != null && b._isBuffer)
+}
+
+Buffer.compare = function compare (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError('Arguments must be Buffers')
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  var i = 0
+  var len = Math.min(x, y)
+  while (i < len) {
+    if (a[i] !== b[i]) break
+
+    ++i
+  }
+
+  if (i !== len) {
+    x = a[i]
+    y = b[i]
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'binary':
+    case 'base64':
+    case 'raw':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!isArray(list)) throw new TypeError('list argument must be an Array of Buffers.')
+
+  if (list.length === 0) {
+    return new Buffer(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; i++) {
+      length += list[i].length
+    }
+  }
+
+  var buf = new Buffer(length)
+  var pos = 0
+  for (i = 0; i < list.length; i++) {
+    var item = list[i]
+    item.copy(buf, pos)
+    pos += item.length
+  }
+  return buf
+}
+
+function byteLength (string, encoding) {
+  if (typeof string !== 'string') string = '' + string
+
+  var len = string.length
+  if (len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'binary':
+      // Deprecated
+      case 'raw':
+      case 'raws':
+        return len
+      case 'utf8':
+      case 'utf-8':
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) return utf8ToBytes(string).length // assume utf8
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  start = start | 0
+  end = end === undefined || end === Infinity ? this.length : end | 0
+
+  if (!encoding) encoding = 'utf8'
+  if (start < 0) start = 0
+  if (end > this.length) end = this.length
+  if (end <= start) return ''
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'binary':
+        return binarySlice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+// Buffer instances.
+Buffer.prototype._isBuffer = true
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length | 0
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max) str += ' ... '
+  }
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return 0
+  return Buffer.compare(this, b)
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset) {
+  if (byteOffset > 0x7fffffff) byteOffset = 0x7fffffff
+  else if (byteOffset < -0x80000000) byteOffset = -0x80000000
+  byteOffset >>= 0
+
+  if (this.length === 0) return -1
+  if (byteOffset >= this.length) return -1
+
+  // Negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = Math.max(this.length + byteOffset, 0)
+
+  if (typeof val === 'string') {
+    if (val.length === 0) return -1 // special case: looking for empty string always fails
+    return String.prototype.indexOf.call(this, val, byteOffset)
+  }
+  if (Buffer.isBuffer(val)) {
+    return arrayIndexOf(this, val, byteOffset)
+  }
+  if (typeof val === 'number') {
+    if (Buffer.TYPED_ARRAY_SUPPORT && Uint8Array.prototype.indexOf === 'function') {
+      return Uint8Array.prototype.indexOf.call(this, val, byteOffset)
+    }
+    return arrayIndexOf(this, [ val ], byteOffset)
+  }
+
+  function arrayIndexOf (arr, val, byteOffset) {
+    var foundIndex = -1
+    for (var i = 0; byteOffset + i < arr.length; i++) {
+      if (arr[byteOffset + i] === val[foundIndex === -1 ? 0 : i - foundIndex]) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === val.length) return byteOffset + foundIndex
+      } else {
+        foundIndex = -1
+      }
+    }
+    return -1
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  // must be an even number of digits
+  var strLen = string.length
+  if (strLen % 2 !== 0) throw new Error('Invalid hex string')
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; i++) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (isNaN(parsed)) throw new Error('Invalid hex string')
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function binaryWrite (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset | 0
+    if (isFinite(length)) {
+      length = length | 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  // legacy write(string, encoding, offset, length) - remove in v0.13
+  } else {
+    var swap = encoding
+    encoding = offset
+    offset = length | 0
+    length = swap
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'binary':
+        return binaryWrite(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+      : (firstByte > 0xBF) ? 2
+      : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; i++) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function binarySlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; i++) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; i++) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = this.subarray(start, end)
+    newBuf.__proto__ = Buffer.prototype
+  } else {
+    var sliceLen = end - start
+    newBuf = new Buffer(sliceLen, undefined)
+    for (var i = 0; i < sliceLen; i++) {
+      newBuf[i] = this[i + start]
+    }
+  }
+
+  if (newBuf.length) newBuf.parent = this.parent || this
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('buffer must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+function objectWriteUInt16 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; i++) {
+    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+      (littleEndian ? i : 1 - i) * 8
+  }
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+function objectWriteUInt32 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; i++) {
+    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+  }
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = (value >>> 24)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 1] = (value >>> 8)
+    this[offset] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = value < 0 ? 1 : 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = value < 0 ? 1 : 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 3] = (value >>> 24)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (value > max || value < min) throw new RangeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('index out of range')
+  if (offset < 0) throw new RangeError('index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+  var i
+
+  if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (i = len - 1; i >= 0; i--) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    // ascending copy from start
+    for (i = 0; i < len; i++) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, start + len),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// fill(value, start=0, end=buffer.length)
+Buffer.prototype.fill = function fill (value, start, end) {
+  if (!value) value = 0
+  if (!start) start = 0
+  if (!end) end = this.length
+
+  if (end < start) throw new RangeError('end < start')
+
+  // Fill 0 bytes; we're done
+  if (end === start) return
+  if (this.length === 0) return
+
+  if (start < 0 || start >= this.length) throw new RangeError('start out of bounds')
+  if (end < 0 || end > this.length) throw new RangeError('end out of bounds')
+
+  var i
+  if (typeof value === 'number') {
+    for (i = start; i < end; i++) {
+      this[i] = value
+    }
+  } else {
+    var bytes = utf8ToBytes(value.toString())
+    var len = bytes.length
+    for (i = start; i < end; i++) {
+      this[i] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function stringtrim (str) {
+  if (str.trim) return str.trim()
+  return str.replace(/^\s+|\s+$/g, '')
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; i++) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; i++) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; i++) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; i++) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+  })();
+});
+
 require.register("es6-promise/dist/es6-promise.js", function(exports, require, module) {
   require = __makeRelativeRequire(require, {"vertx":false}, "es6-promise");
   (function() {
@@ -2513,6 +4090,96 @@ module.exports = function hoistNonReactStatics(targetComponent, sourceComponent,
   })();
 });
 
+require.register("ieee754/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "ieee754");
+  (function() {
+    exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = (value * c - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+  })();
+});
+
 require.register("invariant/browser.js", function(exports, require, module) {
   require = __makeRelativeRequire(require, {}, "invariant");
   (function() {
@@ -2567,6 +4234,17 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 };
 
 module.exports = invariant;
+  })();
+});
+
+require.register("isarray/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "isarray");
+  (function() {
+    var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
   })();
 });
 
@@ -12650,6 +14328,2187 @@ return jQuery;
   })();
 });
 
+require.register("lodash/_DataView.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getNative = require('./_getNative'),
+    root = require('./_root');
+
+/* Built-in method references that are verified to be native. */
+var DataView = getNative(root, 'DataView');
+
+module.exports = DataView;
+  })();
+});
+
+require.register("lodash/_Hash.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var hashClear = require('./_hashClear'),
+    hashDelete = require('./_hashDelete'),
+    hashGet = require('./_hashGet'),
+    hashHas = require('./_hashHas'),
+    hashSet = require('./_hashSet');
+
+/**
+ * Creates a hash object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function Hash(entries) {
+  var index = -1,
+      length = entries ? entries.length : 0;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `Hash`.
+Hash.prototype.clear = hashClear;
+Hash.prototype['delete'] = hashDelete;
+Hash.prototype.get = hashGet;
+Hash.prototype.has = hashHas;
+Hash.prototype.set = hashSet;
+
+module.exports = Hash;
+  })();
+});
+
+require.register("lodash/_ListCache.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var listCacheClear = require('./_listCacheClear'),
+    listCacheDelete = require('./_listCacheDelete'),
+    listCacheGet = require('./_listCacheGet'),
+    listCacheHas = require('./_listCacheHas'),
+    listCacheSet = require('./_listCacheSet');
+
+/**
+ * Creates an list cache object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function ListCache(entries) {
+  var index = -1,
+      length = entries ? entries.length : 0;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `ListCache`.
+ListCache.prototype.clear = listCacheClear;
+ListCache.prototype['delete'] = listCacheDelete;
+ListCache.prototype.get = listCacheGet;
+ListCache.prototype.has = listCacheHas;
+ListCache.prototype.set = listCacheSet;
+
+module.exports = ListCache;
+  })();
+});
+
+require.register("lodash/_Map.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getNative = require('./_getNative'),
+    root = require('./_root');
+
+/* Built-in method references that are verified to be native. */
+var Map = getNative(root, 'Map');
+
+module.exports = Map;
+  })();
+});
+
+require.register("lodash/_MapCache.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var mapCacheClear = require('./_mapCacheClear'),
+    mapCacheDelete = require('./_mapCacheDelete'),
+    mapCacheGet = require('./_mapCacheGet'),
+    mapCacheHas = require('./_mapCacheHas'),
+    mapCacheSet = require('./_mapCacheSet');
+
+/**
+ * Creates a map cache object to store key-value pairs.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function MapCache(entries) {
+  var index = -1,
+      length = entries ? entries.length : 0;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `MapCache`.
+MapCache.prototype.clear = mapCacheClear;
+MapCache.prototype['delete'] = mapCacheDelete;
+MapCache.prototype.get = mapCacheGet;
+MapCache.prototype.has = mapCacheHas;
+MapCache.prototype.set = mapCacheSet;
+
+module.exports = MapCache;
+  })();
+});
+
+require.register("lodash/_Promise.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getNative = require('./_getNative'),
+    root = require('./_root');
+
+/* Built-in method references that are verified to be native. */
+var Promise = getNative(root, 'Promise');
+
+module.exports = Promise;
+  })();
+});
+
+require.register("lodash/_Set.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getNative = require('./_getNative'),
+    root = require('./_root');
+
+/* Built-in method references that are verified to be native. */
+var Set = getNative(root, 'Set');
+
+module.exports = Set;
+  })();
+});
+
+require.register("lodash/_SetCache.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var MapCache = require('./_MapCache'),
+    setCacheAdd = require('./_setCacheAdd'),
+    setCacheHas = require('./_setCacheHas');
+
+/**
+ *
+ * Creates an array cache object to store unique values.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [values] The values to cache.
+ */
+function SetCache(values) {
+  var index = -1,
+      length = values ? values.length : 0;
+
+  this.__data__ = new MapCache;
+  while (++index < length) {
+    this.add(values[index]);
+  }
+}
+
+// Add methods to `SetCache`.
+SetCache.prototype.add = SetCache.prototype.push = setCacheAdd;
+SetCache.prototype.has = setCacheHas;
+
+module.exports = SetCache;
+  })();
+});
+
+require.register("lodash/_Stack.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var ListCache = require('./_ListCache'),
+    stackClear = require('./_stackClear'),
+    stackDelete = require('./_stackDelete'),
+    stackGet = require('./_stackGet'),
+    stackHas = require('./_stackHas'),
+    stackSet = require('./_stackSet');
+
+/**
+ * Creates a stack cache object to store key-value pairs.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function Stack(entries) {
+  this.__data__ = new ListCache(entries);
+}
+
+// Add methods to `Stack`.
+Stack.prototype.clear = stackClear;
+Stack.prototype['delete'] = stackDelete;
+Stack.prototype.get = stackGet;
+Stack.prototype.has = stackHas;
+Stack.prototype.set = stackSet;
+
+module.exports = Stack;
+  })();
+});
+
+require.register("lodash/_Symbol.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var root = require('./_root');
+
+/** Built-in value references. */
+var Symbol = root.Symbol;
+
+module.exports = Symbol;
+  })();
+});
+
+require.register("lodash/_Uint8Array.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var root = require('./_root');
+
+/** Built-in value references. */
+var Uint8Array = root.Uint8Array;
+
+module.exports = Uint8Array;
+  })();
+});
+
+require.register("lodash/_WeakMap.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getNative = require('./_getNative'),
+    root = require('./_root');
+
+/* Built-in method references that are verified to be native. */
+var WeakMap = getNative(root, 'WeakMap');
+
+module.exports = WeakMap;
+  })();
+});
+
+require.register("lodash/_addMapEntry.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Adds the key-value `pair` to `map`.
+ *
+ * @private
+ * @param {Object} map The map to modify.
+ * @param {Array} pair The key-value pair to add.
+ * @returns {Object} Returns `map`.
+ */
+function addMapEntry(map, pair) {
+  // Don't return `map.set` because it's not chainable in IE 11.
+  map.set(pair[0], pair[1]);
+  return map;
+}
+
+module.exports = addMapEntry;
+  })();
+});
+
+require.register("lodash/_addSetEntry.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Adds `value` to `set`.
+ *
+ * @private
+ * @param {Object} set The set to modify.
+ * @param {*} value The value to add.
+ * @returns {Object} Returns `set`.
+ */
+function addSetEntry(set, value) {
+  // Don't return `set.add` because it's not chainable in IE 11.
+  set.add(value);
+  return set;
+}
+
+module.exports = addSetEntry;
+  })();
+});
+
+require.register("lodash/_arrayEach.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * A specialized version of `_.forEach` for arrays without support for
+ * iteratee shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns `array`.
+ */
+function arrayEach(array, iteratee) {
+  var index = -1,
+      length = array ? array.length : 0;
+
+  while (++index < length) {
+    if (iteratee(array[index], index, array) === false) {
+      break;
+    }
+  }
+  return array;
+}
+
+module.exports = arrayEach;
+  })();
+});
+
+require.register("lodash/_arrayPush.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Appends the elements of `values` to `array`.
+ *
+ * @private
+ * @param {Array} array The array to modify.
+ * @param {Array} values The values to append.
+ * @returns {Array} Returns `array`.
+ */
+function arrayPush(array, values) {
+  var index = -1,
+      length = values.length,
+      offset = array.length;
+
+  while (++index < length) {
+    array[offset + index] = values[index];
+  }
+  return array;
+}
+
+module.exports = arrayPush;
+  })();
+});
+
+require.register("lodash/_arrayReduce.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * A specialized version of `_.reduce` for arrays without support for
+ * iteratee shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @param {*} [accumulator] The initial value.
+ * @param {boolean} [initAccum] Specify using the first element of `array` as
+ *  the initial value.
+ * @returns {*} Returns the accumulated value.
+ */
+function arrayReduce(array, iteratee, accumulator, initAccum) {
+  var index = -1,
+      length = array ? array.length : 0;
+
+  if (initAccum && length) {
+    accumulator = array[++index];
+  }
+  while (++index < length) {
+    accumulator = iteratee(accumulator, array[index], index, array);
+  }
+  return accumulator;
+}
+
+module.exports = arrayReduce;
+  })();
+});
+
+require.register("lodash/_arraySome.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * A specialized version of `_.some` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} predicate The function invoked per iteration.
+ * @returns {boolean} Returns `true` if any element passes the predicate check,
+ *  else `false`.
+ */
+function arraySome(array, predicate) {
+  var index = -1,
+      length = array ? array.length : 0;
+
+  while (++index < length) {
+    if (predicate(array[index], index, array)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+module.exports = arraySome;
+  })();
+});
+
+require.register("lodash/_assignValue.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var eq = require('./eq');
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Assigns `value` to `key` of `object` if the existing value is not equivalent
+ * using [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
+ * for equality comparisons.
+ *
+ * @private
+ * @param {Object} object The object to modify.
+ * @param {string} key The key of the property to assign.
+ * @param {*} value The value to assign.
+ */
+function assignValue(object, key, value) {
+  var objValue = object[key];
+  if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
+      (value === undefined && !(key in object))) {
+    object[key] = value;
+  }
+}
+
+module.exports = assignValue;
+  })();
+});
+
+require.register("lodash/_assocIndexOf.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var eq = require('./eq');
+
+/**
+ * Gets the index at which the `key` is found in `array` of key-value pairs.
+ *
+ * @private
+ * @param {Array} array The array to search.
+ * @param {*} key The key to search for.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function assocIndexOf(array, key) {
+  var length = array.length;
+  while (length--) {
+    if (eq(array[length][0], key)) {
+      return length;
+    }
+  }
+  return -1;
+}
+
+module.exports = assocIndexOf;
+  })();
+});
+
+require.register("lodash/_baseAssign.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var copyObject = require('./_copyObject'),
+    keys = require('./keys');
+
+/**
+ * The base implementation of `_.assign` without support for multiple sources
+ * or `customizer` functions.
+ *
+ * @private
+ * @param {Object} object The destination object.
+ * @param {Object} source The source object.
+ * @returns {Object} Returns `object`.
+ */
+function baseAssign(object, source) {
+  return object && copyObject(source, keys(source), object);
+}
+
+module.exports = baseAssign;
+  })();
+});
+
+require.register("lodash/_baseClone.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Stack = require('./_Stack'),
+    arrayEach = require('./_arrayEach'),
+    assignValue = require('./_assignValue'),
+    baseAssign = require('./_baseAssign'),
+    cloneBuffer = require('./_cloneBuffer'),
+    copyArray = require('./_copyArray'),
+    copySymbols = require('./_copySymbols'),
+    getAllKeys = require('./_getAllKeys'),
+    getTag = require('./_getTag'),
+    initCloneArray = require('./_initCloneArray'),
+    initCloneByTag = require('./_initCloneByTag'),
+    initCloneObject = require('./_initCloneObject'),
+    isArray = require('./isArray'),
+    isBuffer = require('./isBuffer'),
+    isHostObject = require('./_isHostObject'),
+    isObject = require('./isObject'),
+    keys = require('./keys');
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    arrayTag = '[object Array]',
+    boolTag = '[object Boolean]',
+    dateTag = '[object Date]',
+    errorTag = '[object Error]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]',
+    mapTag = '[object Map]',
+    numberTag = '[object Number]',
+    objectTag = '[object Object]',
+    regexpTag = '[object RegExp]',
+    setTag = '[object Set]',
+    stringTag = '[object String]',
+    symbolTag = '[object Symbol]',
+    weakMapTag = '[object WeakMap]';
+
+var arrayBufferTag = '[object ArrayBuffer]',
+    dataViewTag = '[object DataView]',
+    float32Tag = '[object Float32Array]',
+    float64Tag = '[object Float64Array]',
+    int8Tag = '[object Int8Array]',
+    int16Tag = '[object Int16Array]',
+    int32Tag = '[object Int32Array]',
+    uint8Tag = '[object Uint8Array]',
+    uint8ClampedTag = '[object Uint8ClampedArray]',
+    uint16Tag = '[object Uint16Array]',
+    uint32Tag = '[object Uint32Array]';
+
+/** Used to identify `toStringTag` values supported by `_.clone`. */
+var cloneableTags = {};
+cloneableTags[argsTag] = cloneableTags[arrayTag] =
+cloneableTags[arrayBufferTag] = cloneableTags[dataViewTag] =
+cloneableTags[boolTag] = cloneableTags[dateTag] =
+cloneableTags[float32Tag] = cloneableTags[float64Tag] =
+cloneableTags[int8Tag] = cloneableTags[int16Tag] =
+cloneableTags[int32Tag] = cloneableTags[mapTag] =
+cloneableTags[numberTag] = cloneableTags[objectTag] =
+cloneableTags[regexpTag] = cloneableTags[setTag] =
+cloneableTags[stringTag] = cloneableTags[symbolTag] =
+cloneableTags[uint8Tag] = cloneableTags[uint8ClampedTag] =
+cloneableTags[uint16Tag] = cloneableTags[uint32Tag] = true;
+cloneableTags[errorTag] = cloneableTags[funcTag] =
+cloneableTags[weakMapTag] = false;
+
+/**
+ * The base implementation of `_.clone` and `_.cloneDeep` which tracks
+ * traversed objects.
+ *
+ * @private
+ * @param {*} value The value to clone.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @param {boolean} [isFull] Specify a clone including symbols.
+ * @param {Function} [customizer] The function to customize cloning.
+ * @param {string} [key] The key of `value`.
+ * @param {Object} [object] The parent object of `value`.
+ * @param {Object} [stack] Tracks traversed objects and their clone counterparts.
+ * @returns {*} Returns the cloned value.
+ */
+function baseClone(value, isDeep, isFull, customizer, key, object, stack) {
+  var result;
+  if (customizer) {
+    result = object ? customizer(value, key, object, stack) : customizer(value);
+  }
+  if (result !== undefined) {
+    return result;
+  }
+  if (!isObject(value)) {
+    return value;
+  }
+  var isArr = isArray(value);
+  if (isArr) {
+    result = initCloneArray(value);
+    if (!isDeep) {
+      return copyArray(value, result);
+    }
+  } else {
+    var tag = getTag(value),
+        isFunc = tag == funcTag || tag == genTag;
+
+    if (isBuffer(value)) {
+      return cloneBuffer(value, isDeep);
+    }
+    if (tag == objectTag || tag == argsTag || (isFunc && !object)) {
+      if (isHostObject(value)) {
+        return object ? value : {};
+      }
+      result = initCloneObject(isFunc ? {} : value);
+      if (!isDeep) {
+        return copySymbols(value, baseAssign(result, value));
+      }
+    } else {
+      if (!cloneableTags[tag]) {
+        return object ? value : {};
+      }
+      result = initCloneByTag(value, tag, baseClone, isDeep);
+    }
+  }
+  // Check for circular references and return its corresponding clone.
+  stack || (stack = new Stack);
+  var stacked = stack.get(value);
+  if (stacked) {
+    return stacked;
+  }
+  stack.set(value, result);
+
+  if (!isArr) {
+    var props = isFull ? getAllKeys(value) : keys(value);
+  }
+  arrayEach(props || value, function(subValue, key) {
+    if (props) {
+      key = subValue;
+      subValue = value[key];
+    }
+    // Recursively populate clone (susceptible to call stack limits).
+    assignValue(result, key, baseClone(subValue, isDeep, isFull, customizer, key, value, stack));
+  });
+  if (!isFull) {
+    stack['delete'](value);
+  }
+  return result;
+}
+
+module.exports = baseClone;
+  })();
+});
+
+require.register("lodash/_baseCreate.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isObject = require('./isObject');
+
+/** Built-in value references. */
+var objectCreate = Object.create;
+
+/**
+ * The base implementation of `_.create` without support for assigning
+ * properties to the created object.
+ *
+ * @private
+ * @param {Object} prototype The object to inherit from.
+ * @returns {Object} Returns the new object.
+ */
+function baseCreate(proto) {
+  return isObject(proto) ? objectCreate(proto) : {};
+}
+
+module.exports = baseCreate;
+  })();
+});
+
+require.register("lodash/_baseFindIndex.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * The base implementation of `_.findIndex` and `_.findLastIndex` without
+ * support for iteratee shorthands.
+ *
+ * @private
+ * @param {Array} array The array to search.
+ * @param {Function} predicate The function invoked per iteration.
+ * @param {number} fromIndex The index to search from.
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function baseFindIndex(array, predicate, fromIndex, fromRight) {
+  var length = array.length,
+      index = fromIndex + (fromRight ? 1 : -1);
+
+  while ((fromRight ? index-- : ++index < length)) {
+    if (predicate(array[index], index, array)) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+module.exports = baseFindIndex;
+  })();
+});
+
+require.register("lodash/_baseGet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var castPath = require('./_castPath'),
+    isKey = require('./_isKey'),
+    toKey = require('./_toKey');
+
+/**
+ * The base implementation of `_.get` without support for default values.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path of the property to get.
+ * @returns {*} Returns the resolved value.
+ */
+function baseGet(object, path) {
+  path = isKey(path, object) ? [path] : castPath(path);
+
+  var index = 0,
+      length = path.length;
+
+  while (object != null && index < length) {
+    object = object[toKey(path[index++])];
+  }
+  return (index && index == length) ? object : undefined;
+}
+
+module.exports = baseGet;
+  })();
+});
+
+require.register("lodash/_baseGetAllKeys.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var arrayPush = require('./_arrayPush'),
+    isArray = require('./isArray');
+
+/**
+ * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
+ * `keysFunc` and `symbolsFunc` to get the enumerable property names and
+ * symbols of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Function} keysFunc The function to get the keys of `object`.
+ * @param {Function} symbolsFunc The function to get the symbols of `object`.
+ * @returns {Array} Returns the array of property names and symbols.
+ */
+function baseGetAllKeys(object, keysFunc, symbolsFunc) {
+  var result = keysFunc(object);
+  return isArray(object) ? result : arrayPush(result, symbolsFunc(object));
+}
+
+module.exports = baseGetAllKeys;
+  })();
+});
+
+require.register("lodash/_baseGetTag.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * The base implementation of `getTag`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  return objectToString.call(value);
+}
+
+module.exports = baseGetTag;
+  })();
+});
+
+require.register("lodash/_baseHas.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getPrototype = require('./_getPrototype');
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * The base implementation of `_.has` without support for deep paths.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {Array|string} key The key to check.
+ * @returns {boolean} Returns `true` if `key` exists, else `false`.
+ */
+function baseHas(object, key) {
+  // Avoid a bug in IE 10-11 where objects with a [[Prototype]] of `null`,
+  // that are composed entirely of index properties, return `false` for
+  // `hasOwnProperty` checks of them.
+  return object != null &&
+    (hasOwnProperty.call(object, key) ||
+      (typeof object == 'object' && key in object && getPrototype(object) === null));
+}
+
+module.exports = baseHas;
+  })();
+});
+
+require.register("lodash/_baseHasIn.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * The base implementation of `_.hasIn` without support for deep paths.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {Array|string} key The key to check.
+ * @returns {boolean} Returns `true` if `key` exists, else `false`.
+ */
+function baseHasIn(object, key) {
+  return object != null && key in Object(object);
+}
+
+module.exports = baseHasIn;
+  })();
+});
+
+require.register("lodash/_baseIsEqual.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIsEqualDeep = require('./_baseIsEqualDeep'),
+    isObject = require('./isObject'),
+    isObjectLike = require('./isObjectLike');
+
+/**
+ * The base implementation of `_.isEqual` which supports partial comparisons
+ * and tracks traversed objects.
+ *
+ * @private
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @param {Function} [customizer] The function to customize comparisons.
+ * @param {boolean} [bitmask] The bitmask of comparison flags.
+ *  The bitmask may be composed of the following flags:
+ *     1 - Unordered comparison
+ *     2 - Partial comparison
+ * @param {Object} [stack] Tracks traversed `value` and `other` objects.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ */
+function baseIsEqual(value, other, customizer, bitmask, stack) {
+  if (value === other) {
+    return true;
+  }
+  if (value == null || other == null || (!isObject(value) && !isObjectLike(other))) {
+    return value !== value && other !== other;
+  }
+  return baseIsEqualDeep(value, other, baseIsEqual, customizer, bitmask, stack);
+}
+
+module.exports = baseIsEqual;
+  })();
+});
+
+require.register("lodash/_baseIsEqualDeep.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Stack = require('./_Stack'),
+    equalArrays = require('./_equalArrays'),
+    equalByTag = require('./_equalByTag'),
+    equalObjects = require('./_equalObjects'),
+    getTag = require('./_getTag'),
+    isArray = require('./isArray'),
+    isHostObject = require('./_isHostObject'),
+    isTypedArray = require('./isTypedArray');
+
+/** Used to compose bitmasks for comparison styles. */
+var PARTIAL_COMPARE_FLAG = 2;
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    arrayTag = '[object Array]',
+    objectTag = '[object Object]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * A specialized version of `baseIsEqual` for arrays and objects which performs
+ * deep comparisons and tracks traversed objects enabling objects with circular
+ * references to be compared.
+ *
+ * @private
+ * @param {Object} object The object to compare.
+ * @param {Object} other The other object to compare.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Function} [customizer] The function to customize comparisons.
+ * @param {number} [bitmask] The bitmask of comparison flags. See `baseIsEqual`
+ *  for more details.
+ * @param {Object} [stack] Tracks traversed `object` and `other` objects.
+ * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+ */
+function baseIsEqualDeep(object, other, equalFunc, customizer, bitmask, stack) {
+  var objIsArr = isArray(object),
+      othIsArr = isArray(other),
+      objTag = arrayTag,
+      othTag = arrayTag;
+
+  if (!objIsArr) {
+    objTag = getTag(object);
+    objTag = objTag == argsTag ? objectTag : objTag;
+  }
+  if (!othIsArr) {
+    othTag = getTag(other);
+    othTag = othTag == argsTag ? objectTag : othTag;
+  }
+  var objIsObj = objTag == objectTag && !isHostObject(object),
+      othIsObj = othTag == objectTag && !isHostObject(other),
+      isSameTag = objTag == othTag;
+
+  if (isSameTag && !objIsObj) {
+    stack || (stack = new Stack);
+    return (objIsArr || isTypedArray(object))
+      ? equalArrays(object, other, equalFunc, customizer, bitmask, stack)
+      : equalByTag(object, other, objTag, equalFunc, customizer, bitmask, stack);
+  }
+  if (!(bitmask & PARTIAL_COMPARE_FLAG)) {
+    var objIsWrapped = objIsObj && hasOwnProperty.call(object, '__wrapped__'),
+        othIsWrapped = othIsObj && hasOwnProperty.call(other, '__wrapped__');
+
+    if (objIsWrapped || othIsWrapped) {
+      var objUnwrapped = objIsWrapped ? object.value() : object,
+          othUnwrapped = othIsWrapped ? other.value() : other;
+
+      stack || (stack = new Stack);
+      return equalFunc(objUnwrapped, othUnwrapped, customizer, bitmask, stack);
+    }
+  }
+  if (!isSameTag) {
+    return false;
+  }
+  stack || (stack = new Stack);
+  return equalObjects(object, other, equalFunc, customizer, bitmask, stack);
+}
+
+module.exports = baseIsEqualDeep;
+  })();
+});
+
+require.register("lodash/_baseIsMatch.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Stack = require('./_Stack'),
+    baseIsEqual = require('./_baseIsEqual');
+
+/** Used to compose bitmasks for comparison styles. */
+var UNORDERED_COMPARE_FLAG = 1,
+    PARTIAL_COMPARE_FLAG = 2;
+
+/**
+ * The base implementation of `_.isMatch` without support for iteratee shorthands.
+ *
+ * @private
+ * @param {Object} object The object to inspect.
+ * @param {Object} source The object of property values to match.
+ * @param {Array} matchData The property names, values, and compare flags to match.
+ * @param {Function} [customizer] The function to customize comparisons.
+ * @returns {boolean} Returns `true` if `object` is a match, else `false`.
+ */
+function baseIsMatch(object, source, matchData, customizer) {
+  var index = matchData.length,
+      length = index,
+      noCustomizer = !customizer;
+
+  if (object == null) {
+    return !length;
+  }
+  object = Object(object);
+  while (index--) {
+    var data = matchData[index];
+    if ((noCustomizer && data[2])
+          ? data[1] !== object[data[0]]
+          : !(data[0] in object)
+        ) {
+      return false;
+    }
+  }
+  while (++index < length) {
+    data = matchData[index];
+    var key = data[0],
+        objValue = object[key],
+        srcValue = data[1];
+
+    if (noCustomizer && data[2]) {
+      if (objValue === undefined && !(key in object)) {
+        return false;
+      }
+    } else {
+      var stack = new Stack;
+      if (customizer) {
+        var result = customizer(objValue, srcValue, key, object, source, stack);
+      }
+      if (!(result === undefined
+            ? baseIsEqual(srcValue, objValue, customizer, UNORDERED_COMPARE_FLAG | PARTIAL_COMPARE_FLAG, stack)
+            : result
+          )) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+module.exports = baseIsMatch;
+  })();
+});
+
+require.register("lodash/_baseIsNative.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isFunction = require('./isFunction'),
+    isHostObject = require('./_isHostObject'),
+    isMasked = require('./_isMasked'),
+    isObject = require('./isObject'),
+    toSource = require('./_toSource');
+
+/**
+ * Used to match `RegExp`
+ * [syntax characters](http://ecma-international.org/ecma-262/6.0/#sec-patterns).
+ */
+var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+/** Used to detect host constructors (Safari). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = Function.prototype.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' +
+  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
+  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+);
+
+/**
+ * The base implementation of `_.isNative` without bad shim checks.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function,
+ *  else `false`.
+ */
+function baseIsNative(value) {
+  if (!isObject(value) || isMasked(value)) {
+    return false;
+  }
+  var pattern = (isFunction(value) || isHostObject(value)) ? reIsNative : reIsHostCtor;
+  return pattern.test(toSource(value));
+}
+
+module.exports = baseIsNative;
+  })();
+});
+
+require.register("lodash/_baseIsTypedArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isLength = require('./isLength'),
+    isObjectLike = require('./isObjectLike');
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    arrayTag = '[object Array]',
+    boolTag = '[object Boolean]',
+    dateTag = '[object Date]',
+    errorTag = '[object Error]',
+    funcTag = '[object Function]',
+    mapTag = '[object Map]',
+    numberTag = '[object Number]',
+    objectTag = '[object Object]',
+    regexpTag = '[object RegExp]',
+    setTag = '[object Set]',
+    stringTag = '[object String]',
+    weakMapTag = '[object WeakMap]';
+
+var arrayBufferTag = '[object ArrayBuffer]',
+    dataViewTag = '[object DataView]',
+    float32Tag = '[object Float32Array]',
+    float64Tag = '[object Float64Array]',
+    int8Tag = '[object Int8Array]',
+    int16Tag = '[object Int16Array]',
+    int32Tag = '[object Int32Array]',
+    uint8Tag = '[object Uint8Array]',
+    uint8ClampedTag = '[object Uint8ClampedArray]',
+    uint16Tag = '[object Uint16Array]',
+    uint32Tag = '[object Uint32Array]';
+
+/** Used to identify `toStringTag` values of typed arrays. */
+var typedArrayTags = {};
+typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
+typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
+typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
+typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
+typedArrayTags[uint32Tag] = true;
+typedArrayTags[argsTag] = typedArrayTags[arrayTag] =
+typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
+typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
+typedArrayTags[errorTag] = typedArrayTags[funcTag] =
+typedArrayTags[mapTag] = typedArrayTags[numberTag] =
+typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
+typedArrayTags[setTag] = typedArrayTags[stringTag] =
+typedArrayTags[weakMapTag] = false;
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * The base implementation of `_.isTypedArray` without Node.js optimizations.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ */
+function baseIsTypedArray(value) {
+  return isObjectLike(value) &&
+    isLength(value.length) && !!typedArrayTags[objectToString.call(value)];
+}
+
+module.exports = baseIsTypedArray;
+  })();
+});
+
+require.register("lodash/_baseIteratee.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseMatches = require('./_baseMatches'),
+    baseMatchesProperty = require('./_baseMatchesProperty'),
+    identity = require('./identity'),
+    isArray = require('./isArray'),
+    property = require('./property');
+
+/**
+ * The base implementation of `_.iteratee`.
+ *
+ * @private
+ * @param {*} [value=_.identity] The value to convert to an iteratee.
+ * @returns {Function} Returns the iteratee.
+ */
+function baseIteratee(value) {
+  // Don't store the `typeof` result in a variable to avoid a JIT bug in Safari 9.
+  // See https://bugs.webkit.org/show_bug.cgi?id=156034 for more details.
+  if (typeof value == 'function') {
+    return value;
+  }
+  if (value == null) {
+    return identity;
+  }
+  if (typeof value == 'object') {
+    return isArray(value)
+      ? baseMatchesProperty(value[0], value[1])
+      : baseMatches(value);
+  }
+  return property(value);
+}
+
+module.exports = baseIteratee;
+  })();
+});
+
+require.register("lodash/_baseKeys.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var overArg = require('./_overArg');
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeKeys = Object.keys;
+
+/**
+ * The base implementation of `_.keys` which doesn't skip the constructor
+ * property of prototypes or treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+var baseKeys = overArg(nativeKeys, Object);
+
+module.exports = baseKeys;
+  })();
+});
+
+require.register("lodash/_baseMatches.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIsMatch = require('./_baseIsMatch'),
+    getMatchData = require('./_getMatchData'),
+    matchesStrictComparable = require('./_matchesStrictComparable');
+
+/**
+ * The base implementation of `_.matches` which doesn't clone `source`.
+ *
+ * @private
+ * @param {Object} source The object of property values to match.
+ * @returns {Function} Returns the new spec function.
+ */
+function baseMatches(source) {
+  var matchData = getMatchData(source);
+  if (matchData.length == 1 && matchData[0][2]) {
+    return matchesStrictComparable(matchData[0][0], matchData[0][1]);
+  }
+  return function(object) {
+    return object === source || baseIsMatch(object, source, matchData);
+  };
+}
+
+module.exports = baseMatches;
+  })();
+});
+
+require.register("lodash/_baseMatchesProperty.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIsEqual = require('./_baseIsEqual'),
+    get = require('./get'),
+    hasIn = require('./hasIn'),
+    isKey = require('./_isKey'),
+    isStrictComparable = require('./_isStrictComparable'),
+    matchesStrictComparable = require('./_matchesStrictComparable'),
+    toKey = require('./_toKey');
+
+/** Used to compose bitmasks for comparison styles. */
+var UNORDERED_COMPARE_FLAG = 1,
+    PARTIAL_COMPARE_FLAG = 2;
+
+/**
+ * The base implementation of `_.matchesProperty` which doesn't clone `srcValue`.
+ *
+ * @private
+ * @param {string} path The path of the property to get.
+ * @param {*} srcValue The value to match.
+ * @returns {Function} Returns the new spec function.
+ */
+function baseMatchesProperty(path, srcValue) {
+  if (isKey(path) && isStrictComparable(srcValue)) {
+    return matchesStrictComparable(toKey(path), srcValue);
+  }
+  return function(object) {
+    var objValue = get(object, path);
+    return (objValue === undefined && objValue === srcValue)
+      ? hasIn(object, path)
+      : baseIsEqual(srcValue, objValue, undefined, UNORDERED_COMPARE_FLAG | PARTIAL_COMPARE_FLAG);
+  };
+}
+
+module.exports = baseMatchesProperty;
+  })();
+});
+
+require.register("lodash/_baseProperty.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * The base implementation of `_.property` without support for deep paths.
+ *
+ * @private
+ * @param {string} key The key of the property to get.
+ * @returns {Function} Returns the new accessor function.
+ */
+function baseProperty(key) {
+  return function(object) {
+    return object == null ? undefined : object[key];
+  };
+}
+
+module.exports = baseProperty;
+  })();
+});
+
+require.register("lodash/_basePropertyDeep.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseGet = require('./_baseGet');
+
+/**
+ * A specialized version of `baseProperty` which supports deep paths.
+ *
+ * @private
+ * @param {Array|string} path The path of the property to get.
+ * @returns {Function} Returns the new accessor function.
+ */
+function basePropertyDeep(path) {
+  return function(object) {
+    return baseGet(object, path);
+  };
+}
+
+module.exports = basePropertyDeep;
+  })();
+});
+
+require.register("lodash/_baseTimes.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+module.exports = baseTimes;
+  })();
+});
+
+require.register("lodash/_baseToString.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Symbol = require('./_Symbol'),
+    isSymbol = require('./isSymbol');
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolToString = symbolProto ? symbolProto.toString : undefined;
+
+/**
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+module.exports = baseToString;
+  })();
+});
+
+require.register("lodash/_baseUnary.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function(value) {
+    return func(value);
+  };
+}
+
+module.exports = baseUnary;
+  })();
+});
+
+require.register("lodash/_castPath.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isArray = require('./isArray'),
+    stringToPath = require('./_stringToPath');
+
+/**
+ * Casts `value` to a path array if it's not one.
+ *
+ * @private
+ * @param {*} value The value to inspect.
+ * @returns {Array} Returns the cast property path array.
+ */
+function castPath(value) {
+  return isArray(value) ? value : stringToPath(value);
+}
+
+module.exports = castPath;
+  })();
+});
+
+require.register("lodash/_cloneArrayBuffer.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Uint8Array = require('./_Uint8Array');
+
+/**
+ * Creates a clone of `arrayBuffer`.
+ *
+ * @private
+ * @param {ArrayBuffer} arrayBuffer The array buffer to clone.
+ * @returns {ArrayBuffer} Returns the cloned array buffer.
+ */
+function cloneArrayBuffer(arrayBuffer) {
+  var result = new arrayBuffer.constructor(arrayBuffer.byteLength);
+  new Uint8Array(result).set(new Uint8Array(arrayBuffer));
+  return result;
+}
+
+module.exports = cloneArrayBuffer;
+  })();
+});
+
+require.register("lodash/_cloneBuffer.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Creates a clone of  `buffer`.
+ *
+ * @private
+ * @param {Buffer} buffer The buffer to clone.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Buffer} Returns the cloned buffer.
+ */
+function cloneBuffer(buffer, isDeep) {
+  if (isDeep) {
+    return buffer.slice();
+  }
+  var result = new buffer.constructor(buffer.length);
+  buffer.copy(result);
+  return result;
+}
+
+module.exports = cloneBuffer;
+  })();
+});
+
+require.register("lodash/_cloneDataView.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var cloneArrayBuffer = require('./_cloneArrayBuffer');
+
+/**
+ * Creates a clone of `dataView`.
+ *
+ * @private
+ * @param {Object} dataView The data view to clone.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Object} Returns the cloned data view.
+ */
+function cloneDataView(dataView, isDeep) {
+  var buffer = isDeep ? cloneArrayBuffer(dataView.buffer) : dataView.buffer;
+  return new dataView.constructor(buffer, dataView.byteOffset, dataView.byteLength);
+}
+
+module.exports = cloneDataView;
+  })();
+});
+
+require.register("lodash/_cloneMap.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var addMapEntry = require('./_addMapEntry'),
+    arrayReduce = require('./_arrayReduce'),
+    mapToArray = require('./_mapToArray');
+
+/**
+ * Creates a clone of `map`.
+ *
+ * @private
+ * @param {Object} map The map to clone.
+ * @param {Function} cloneFunc The function to clone values.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Object} Returns the cloned map.
+ */
+function cloneMap(map, isDeep, cloneFunc) {
+  var array = isDeep ? cloneFunc(mapToArray(map), true) : mapToArray(map);
+  return arrayReduce(array, addMapEntry, new map.constructor);
+}
+
+module.exports = cloneMap;
+  })();
+});
+
+require.register("lodash/_cloneRegExp.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used to match `RegExp` flags from their coerced string values. */
+var reFlags = /\w*$/;
+
+/**
+ * Creates a clone of `regexp`.
+ *
+ * @private
+ * @param {Object} regexp The regexp to clone.
+ * @returns {Object} Returns the cloned regexp.
+ */
+function cloneRegExp(regexp) {
+  var result = new regexp.constructor(regexp.source, reFlags.exec(regexp));
+  result.lastIndex = regexp.lastIndex;
+  return result;
+}
+
+module.exports = cloneRegExp;
+  })();
+});
+
+require.register("lodash/_cloneSet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var addSetEntry = require('./_addSetEntry'),
+    arrayReduce = require('./_arrayReduce'),
+    setToArray = require('./_setToArray');
+
+/**
+ * Creates a clone of `set`.
+ *
+ * @private
+ * @param {Object} set The set to clone.
+ * @param {Function} cloneFunc The function to clone values.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Object} Returns the cloned set.
+ */
+function cloneSet(set, isDeep, cloneFunc) {
+  var array = isDeep ? cloneFunc(setToArray(set), true) : setToArray(set);
+  return arrayReduce(array, addSetEntry, new set.constructor);
+}
+
+module.exports = cloneSet;
+  })();
+});
+
+require.register("lodash/_cloneSymbol.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Symbol = require('./_Symbol');
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolValueOf = symbolProto ? symbolProto.valueOf : undefined;
+
+/**
+ * Creates a clone of the `symbol` object.
+ *
+ * @private
+ * @param {Object} symbol The symbol object to clone.
+ * @returns {Object} Returns the cloned symbol object.
+ */
+function cloneSymbol(symbol) {
+  return symbolValueOf ? Object(symbolValueOf.call(symbol)) : {};
+}
+
+module.exports = cloneSymbol;
+  })();
+});
+
+require.register("lodash/_cloneTypedArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var cloneArrayBuffer = require('./_cloneArrayBuffer');
+
+/**
+ * Creates a clone of `typedArray`.
+ *
+ * @private
+ * @param {Object} typedArray The typed array to clone.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Object} Returns the cloned typed array.
+ */
+function cloneTypedArray(typedArray, isDeep) {
+  var buffer = isDeep ? cloneArrayBuffer(typedArray.buffer) : typedArray.buffer;
+  return new typedArray.constructor(buffer, typedArray.byteOffset, typedArray.length);
+}
+
+module.exports = cloneTypedArray;
+  })();
+});
+
+require.register("lodash/_copyArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Copies the values of `source` to `array`.
+ *
+ * @private
+ * @param {Array} source The array to copy values from.
+ * @param {Array} [array=[]] The array to copy values to.
+ * @returns {Array} Returns `array`.
+ */
+function copyArray(source, array) {
+  var index = -1,
+      length = source.length;
+
+  array || (array = Array(length));
+  while (++index < length) {
+    array[index] = source[index];
+  }
+  return array;
+}
+
+module.exports = copyArray;
+  })();
+});
+
+require.register("lodash/_copyObject.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var assignValue = require('./_assignValue');
+
+/**
+ * Copies properties of `source` to `object`.
+ *
+ * @private
+ * @param {Object} source The object to copy properties from.
+ * @param {Array} props The property identifiers to copy.
+ * @param {Object} [object={}] The object to copy properties to.
+ * @param {Function} [customizer] The function to customize copied values.
+ * @returns {Object} Returns `object`.
+ */
+function copyObject(source, props, object, customizer) {
+  object || (object = {});
+
+  var index = -1,
+      length = props.length;
+
+  while (++index < length) {
+    var key = props[index];
+
+    var newValue = customizer
+      ? customizer(object[key], source[key], key, object, source)
+      : undefined;
+
+    assignValue(object, key, newValue === undefined ? source[key] : newValue);
+  }
+  return object;
+}
+
+module.exports = copyObject;
+  })();
+});
+
+require.register("lodash/_copySymbols.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var copyObject = require('./_copyObject'),
+    getSymbols = require('./_getSymbols');
+
+/**
+ * Copies own symbol properties of `source` to `object`.
+ *
+ * @private
+ * @param {Object} source The object to copy symbols from.
+ * @param {Object} [object={}] The object to copy symbols to.
+ * @returns {Object} Returns `object`.
+ */
+function copySymbols(source, object) {
+  return copyObject(source, getSymbols(source), object);
+}
+
+module.exports = copySymbols;
+  })();
+});
+
+require.register("lodash/_coreJsData.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var root = require('./_root');
+
+/** Used to detect overreaching core-js shims. */
+var coreJsData = root['__core-js_shared__'];
+
+module.exports = coreJsData;
+  })();
+});
+
+require.register("lodash/_createFind.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIteratee = require('./_baseIteratee'),
+    isArrayLike = require('./isArrayLike'),
+    keys = require('./keys');
+
+/**
+ * Creates a `_.find` or `_.findLast` function.
+ *
+ * @private
+ * @param {Function} findIndexFunc The function to find the collection index.
+ * @returns {Function} Returns the new find function.
+ */
+function createFind(findIndexFunc) {
+  return function(collection, predicate, fromIndex) {
+    var iterable = Object(collection);
+    if (!isArrayLike(collection)) {
+      var iteratee = baseIteratee(predicate, 3);
+      collection = keys(collection);
+      predicate = function(key) { return iteratee(iterable[key], key, iterable); };
+    }
+    var index = findIndexFunc(collection, predicate, fromIndex);
+    return index > -1 ? iterable[iteratee ? collection[index] : index] : undefined;
+  };
+}
+
+module.exports = createFind;
+  })();
+});
+
+require.register("lodash/_equalArrays.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var SetCache = require('./_SetCache'),
+    arraySome = require('./_arraySome');
+
+/** Used to compose bitmasks for comparison styles. */
+var UNORDERED_COMPARE_FLAG = 1,
+    PARTIAL_COMPARE_FLAG = 2;
+
+/**
+ * A specialized version of `baseIsEqualDeep` for arrays with support for
+ * partial deep comparisons.
+ *
+ * @private
+ * @param {Array} array The array to compare.
+ * @param {Array} other The other array to compare.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {number} bitmask The bitmask of comparison flags. See `baseIsEqual`
+ *  for more details.
+ * @param {Object} stack Tracks traversed `array` and `other` objects.
+ * @returns {boolean} Returns `true` if the arrays are equivalent, else `false`.
+ */
+function equalArrays(array, other, equalFunc, customizer, bitmask, stack) {
+  var isPartial = bitmask & PARTIAL_COMPARE_FLAG,
+      arrLength = array.length,
+      othLength = other.length;
+
+  if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
+    return false;
+  }
+  // Assume cyclic values are equal.
+  var stacked = stack.get(array);
+  if (stacked && stack.get(other)) {
+    return stacked == other;
+  }
+  var index = -1,
+      result = true,
+      seen = (bitmask & UNORDERED_COMPARE_FLAG) ? new SetCache : undefined;
+
+  stack.set(array, other);
+  stack.set(other, array);
+
+  // Ignore non-index properties.
+  while (++index < arrLength) {
+    var arrValue = array[index],
+        othValue = other[index];
+
+    if (customizer) {
+      var compared = isPartial
+        ? customizer(othValue, arrValue, index, other, array, stack)
+        : customizer(arrValue, othValue, index, array, other, stack);
+    }
+    if (compared !== undefined) {
+      if (compared) {
+        continue;
+      }
+      result = false;
+      break;
+    }
+    // Recursively compare arrays (susceptible to call stack limits).
+    if (seen) {
+      if (!arraySome(other, function(othValue, othIndex) {
+            if (!seen.has(othIndex) &&
+                (arrValue === othValue || equalFunc(arrValue, othValue, customizer, bitmask, stack))) {
+              return seen.add(othIndex);
+            }
+          })) {
+        result = false;
+        break;
+      }
+    } else if (!(
+          arrValue === othValue ||
+            equalFunc(arrValue, othValue, customizer, bitmask, stack)
+        )) {
+      result = false;
+      break;
+    }
+  }
+  stack['delete'](array);
+  return result;
+}
+
+module.exports = equalArrays;
+  })();
+});
+
+require.register("lodash/_equalByTag.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Symbol = require('./_Symbol'),
+    Uint8Array = require('./_Uint8Array'),
+    eq = require('./eq'),
+    equalArrays = require('./_equalArrays'),
+    mapToArray = require('./_mapToArray'),
+    setToArray = require('./_setToArray');
+
+/** Used to compose bitmasks for comparison styles. */
+var UNORDERED_COMPARE_FLAG = 1,
+    PARTIAL_COMPARE_FLAG = 2;
+
+/** `Object#toString` result references. */
+var boolTag = '[object Boolean]',
+    dateTag = '[object Date]',
+    errorTag = '[object Error]',
+    mapTag = '[object Map]',
+    numberTag = '[object Number]',
+    regexpTag = '[object RegExp]',
+    setTag = '[object Set]',
+    stringTag = '[object String]',
+    symbolTag = '[object Symbol]';
+
+var arrayBufferTag = '[object ArrayBuffer]',
+    dataViewTag = '[object DataView]';
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolValueOf = symbolProto ? symbolProto.valueOf : undefined;
+
+/**
+ * A specialized version of `baseIsEqualDeep` for comparing objects of
+ * the same `toStringTag`.
+ *
+ * **Note:** This function only supports comparing values with tags of
+ * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
+ *
+ * @private
+ * @param {Object} object The object to compare.
+ * @param {Object} other The other object to compare.
+ * @param {string} tag The `toStringTag` of the objects to compare.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {number} bitmask The bitmask of comparison flags. See `baseIsEqual`
+ *  for more details.
+ * @param {Object} stack Tracks traversed `object` and `other` objects.
+ * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+ */
+function equalByTag(object, other, tag, equalFunc, customizer, bitmask, stack) {
+  switch (tag) {
+    case dataViewTag:
+      if ((object.byteLength != other.byteLength) ||
+          (object.byteOffset != other.byteOffset)) {
+        return false;
+      }
+      object = object.buffer;
+      other = other.buffer;
+
+    case arrayBufferTag:
+      if ((object.byteLength != other.byteLength) ||
+          !equalFunc(new Uint8Array(object), new Uint8Array(other))) {
+        return false;
+      }
+      return true;
+
+    case boolTag:
+    case dateTag:
+    case numberTag:
+      // Coerce booleans to `1` or `0` and dates to milliseconds.
+      // Invalid dates are coerced to `NaN`.
+      return eq(+object, +other);
+
+    case errorTag:
+      return object.name == other.name && object.message == other.message;
+
+    case regexpTag:
+    case stringTag:
+      // Coerce regexes to strings and treat strings, primitives and objects,
+      // as equal. See http://www.ecma-international.org/ecma-262/6.0/#sec-regexp.prototype.tostring
+      // for more details.
+      return object == (other + '');
+
+    case mapTag:
+      var convert = mapToArray;
+
+    case setTag:
+      var isPartial = bitmask & PARTIAL_COMPARE_FLAG;
+      convert || (convert = setToArray);
+
+      if (object.size != other.size && !isPartial) {
+        return false;
+      }
+      // Assume cyclic values are equal.
+      var stacked = stack.get(object);
+      if (stacked) {
+        return stacked == other;
+      }
+      bitmask |= UNORDERED_COMPARE_FLAG;
+
+      // Recursively compare objects (susceptible to call stack limits).
+      stack.set(object, other);
+      var result = equalArrays(convert(object), convert(other), equalFunc, customizer, bitmask, stack);
+      stack['delete'](object);
+      return result;
+
+    case symbolTag:
+      if (symbolValueOf) {
+        return symbolValueOf.call(object) == symbolValueOf.call(other);
+      }
+  }
+  return false;
+}
+
+module.exports = equalByTag;
+  })();
+});
+
+require.register("lodash/_equalObjects.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseHas = require('./_baseHas'),
+    keys = require('./keys');
+
+/** Used to compose bitmasks for comparison styles. */
+var PARTIAL_COMPARE_FLAG = 2;
+
+/**
+ * A specialized version of `baseIsEqualDeep` for objects with support for
+ * partial deep comparisons.
+ *
+ * @private
+ * @param {Object} object The object to compare.
+ * @param {Object} other The other object to compare.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {number} bitmask The bitmask of comparison flags. See `baseIsEqual`
+ *  for more details.
+ * @param {Object} stack Tracks traversed `object` and `other` objects.
+ * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+ */
+function equalObjects(object, other, equalFunc, customizer, bitmask, stack) {
+  var isPartial = bitmask & PARTIAL_COMPARE_FLAG,
+      objProps = keys(object),
+      objLength = objProps.length,
+      othProps = keys(other),
+      othLength = othProps.length;
+
+  if (objLength != othLength && !isPartial) {
+    return false;
+  }
+  var index = objLength;
+  while (index--) {
+    var key = objProps[index];
+    if (!(isPartial ? key in other : baseHas(other, key))) {
+      return false;
+    }
+  }
+  // Assume cyclic values are equal.
+  var stacked = stack.get(object);
+  if (stacked && stack.get(other)) {
+    return stacked == other;
+  }
+  var result = true;
+  stack.set(object, other);
+  stack.set(other, object);
+
+  var skipCtor = isPartial;
+  while (++index < objLength) {
+    key = objProps[index];
+    var objValue = object[key],
+        othValue = other[key];
+
+    if (customizer) {
+      var compared = isPartial
+        ? customizer(othValue, objValue, key, other, object, stack)
+        : customizer(objValue, othValue, key, object, other, stack);
+    }
+    // Recursively compare objects (susceptible to call stack limits).
+    if (!(compared === undefined
+          ? (objValue === othValue || equalFunc(objValue, othValue, customizer, bitmask, stack))
+          : compared
+        )) {
+      result = false;
+      break;
+    }
+    skipCtor || (skipCtor = key == 'constructor');
+  }
+  if (result && !skipCtor) {
+    var objCtor = object.constructor,
+        othCtor = other.constructor;
+
+    // Non `Object` object instances with different constructors are not equal.
+    if (objCtor != othCtor &&
+        ('constructor' in object && 'constructor' in other) &&
+        !(typeof objCtor == 'function' && objCtor instanceof objCtor &&
+          typeof othCtor == 'function' && othCtor instanceof othCtor)) {
+      result = false;
+    }
+  }
+  stack['delete'](object);
+  return result;
+}
+
+module.exports = equalObjects;
+  })();
+});
+
+require.register("lodash/_freeGlobal.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+module.exports = freeGlobal;
+  })();
+});
+
+require.register("lodash/_getAllKeys.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseGetAllKeys = require('./_baseGetAllKeys'),
+    getSymbols = require('./_getSymbols'),
+    keys = require('./keys');
+
+/**
+ * Creates an array of own enumerable property names and symbols of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names and symbols.
+ */
+function getAllKeys(object) {
+  return baseGetAllKeys(object, keys, getSymbols);
+}
+
+module.exports = getAllKeys;
+  })();
+});
+
+require.register("lodash/_getLength.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseProperty = require('./_baseProperty');
+
+/**
+ * Gets the "length" property value of `object`.
+ *
+ * **Note:** This function is used to avoid a
+ * [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792) that affects
+ * Safari on at least iOS 8.1-8.3 ARM64.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {*} Returns the "length" value.
+ */
+var getLength = baseProperty('length');
+
+module.exports = getLength;
+  })();
+});
+
+require.register("lodash/_getMapData.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isKeyable = require('./_isKeyable');
+
+/**
+ * Gets the data for `map`.
+ *
+ * @private
+ * @param {Object} map The map to query.
+ * @param {string} key The reference key.
+ * @returns {*} Returns the map data.
+ */
+function getMapData(map, key) {
+  var data = map.__data__;
+  return isKeyable(key)
+    ? data[typeof key == 'string' ? 'string' : 'hash']
+    : data.map;
+}
+
+module.exports = getMapData;
+  })();
+});
+
+require.register("lodash/_getMatchData.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isStrictComparable = require('./_isStrictComparable'),
+    keys = require('./keys');
+
+/**
+ * Gets the property names, values, and compare flags of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the match data of `object`.
+ */
+function getMatchData(object) {
+  var result = keys(object),
+      length = result.length;
+
+  while (length--) {
+    var key = result[length],
+        value = object[key];
+
+    result[length] = [key, value, isStrictComparable(value)];
+  }
+  return result;
+}
+
+module.exports = getMatchData;
+  })();
+});
+
+require.register("lodash/_getNative.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIsNative = require('./_baseIsNative'),
+    getValue = require('./_getValue');
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = getValue(object, key);
+  return baseIsNative(value) ? value : undefined;
+}
+
+module.exports = getNative;
+  })();
+});
+
 require.register("lodash/_getPrototype.js", function(exports, require, module) {
   require = __makeRelativeRequire(require, {}, "lodash");
   (function() {
@@ -12668,6 +16527,475 @@ var nativeGetPrototype = Object.getPrototypeOf;
 var getPrototype = overArg(nativeGetPrototype, Object);
 
 module.exports = getPrototype;
+  })();
+});
+
+require.register("lodash/_getSymbols.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var overArg = require('./_overArg'),
+    stubArray = require('./stubArray');
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeGetSymbols = Object.getOwnPropertySymbols;
+
+/**
+ * Creates an array of the own enumerable symbol properties of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of symbols.
+ */
+var getSymbols = nativeGetSymbols ? overArg(nativeGetSymbols, Object) : stubArray;
+
+module.exports = getSymbols;
+  })();
+});
+
+require.register("lodash/_getTag.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var DataView = require('./_DataView'),
+    Map = require('./_Map'),
+    Promise = require('./_Promise'),
+    Set = require('./_Set'),
+    WeakMap = require('./_WeakMap'),
+    baseGetTag = require('./_baseGetTag'),
+    toSource = require('./_toSource');
+
+/** `Object#toString` result references. */
+var mapTag = '[object Map]',
+    objectTag = '[object Object]',
+    promiseTag = '[object Promise]',
+    setTag = '[object Set]',
+    weakMapTag = '[object WeakMap]';
+
+var dataViewTag = '[object DataView]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Used to detect maps, sets, and weakmaps. */
+var dataViewCtorString = toSource(DataView),
+    mapCtorString = toSource(Map),
+    promiseCtorString = toSource(Promise),
+    setCtorString = toSource(Set),
+    weakMapCtorString = toSource(WeakMap);
+
+/**
+ * Gets the `toStringTag` of `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+var getTag = baseGetTag;
+
+// Fallback for data views, maps, sets, and weak maps in IE 11,
+// for data views in Edge, and promises in Node.js.
+if ((DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag) ||
+    (Map && getTag(new Map) != mapTag) ||
+    (Promise && getTag(Promise.resolve()) != promiseTag) ||
+    (Set && getTag(new Set) != setTag) ||
+    (WeakMap && getTag(new WeakMap) != weakMapTag)) {
+  getTag = function(value) {
+    var result = objectToString.call(value),
+        Ctor = result == objectTag ? value.constructor : undefined,
+        ctorString = Ctor ? toSource(Ctor) : undefined;
+
+    if (ctorString) {
+      switch (ctorString) {
+        case dataViewCtorString: return dataViewTag;
+        case mapCtorString: return mapTag;
+        case promiseCtorString: return promiseTag;
+        case setCtorString: return setTag;
+        case weakMapCtorString: return weakMapTag;
+      }
+    }
+    return result;
+  };
+}
+
+module.exports = getTag;
+  })();
+});
+
+require.register("lodash/_getValue.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Gets the value at `key` of `object`.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {string} key The key of the property to get.
+ * @returns {*} Returns the property value.
+ */
+function getValue(object, key) {
+  return object == null ? undefined : object[key];
+}
+
+module.exports = getValue;
+  })();
+});
+
+require.register("lodash/_hasPath.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var castPath = require('./_castPath'),
+    isArguments = require('./isArguments'),
+    isArray = require('./isArray'),
+    isIndex = require('./_isIndex'),
+    isKey = require('./_isKey'),
+    isLength = require('./isLength'),
+    isString = require('./isString'),
+    toKey = require('./_toKey');
+
+/**
+ * Checks if `path` exists on `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path to check.
+ * @param {Function} hasFunc The function to check properties.
+ * @returns {boolean} Returns `true` if `path` exists, else `false`.
+ */
+function hasPath(object, path, hasFunc) {
+  path = isKey(path, object) ? [path] : castPath(path);
+
+  var result,
+      index = -1,
+      length = path.length;
+
+  while (++index < length) {
+    var key = toKey(path[index]);
+    if (!(result = object != null && hasFunc(object, key))) {
+      break;
+    }
+    object = object[key];
+  }
+  if (result) {
+    return result;
+  }
+  var length = object ? object.length : 0;
+  return !!length && isLength(length) && isIndex(key, length) &&
+    (isArray(object) || isString(object) || isArguments(object));
+}
+
+module.exports = hasPath;
+  })();
+});
+
+require.register("lodash/_hashClear.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var nativeCreate = require('./_nativeCreate');
+
+/**
+ * Removes all key-value entries from the hash.
+ *
+ * @private
+ * @name clear
+ * @memberOf Hash
+ */
+function hashClear() {
+  this.__data__ = nativeCreate ? nativeCreate(null) : {};
+}
+
+module.exports = hashClear;
+  })();
+});
+
+require.register("lodash/_hashDelete.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Removes `key` and its value from the hash.
+ *
+ * @private
+ * @name delete
+ * @memberOf Hash
+ * @param {Object} hash The hash to modify.
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function hashDelete(key) {
+  return this.has(key) && delete this.__data__[key];
+}
+
+module.exports = hashDelete;
+  })();
+});
+
+require.register("lodash/_hashGet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var nativeCreate = require('./_nativeCreate');
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Gets the hash value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf Hash
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function hashGet(key) {
+  var data = this.__data__;
+  if (nativeCreate) {
+    var result = data[key];
+    return result === HASH_UNDEFINED ? undefined : result;
+  }
+  return hasOwnProperty.call(data, key) ? data[key] : undefined;
+}
+
+module.exports = hashGet;
+  })();
+});
+
+require.register("lodash/_hashHas.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var nativeCreate = require('./_nativeCreate');
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Checks if a hash value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf Hash
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function hashHas(key) {
+  var data = this.__data__;
+  return nativeCreate ? data[key] !== undefined : hasOwnProperty.call(data, key);
+}
+
+module.exports = hashHas;
+  })();
+});
+
+require.register("lodash/_hashSet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var nativeCreate = require('./_nativeCreate');
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/**
+ * Sets the hash `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf Hash
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the hash instance.
+ */
+function hashSet(key, value) {
+  var data = this.__data__;
+  data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
+  return this;
+}
+
+module.exports = hashSet;
+  })();
+});
+
+require.register("lodash/_indexKeys.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseTimes = require('./_baseTimes'),
+    isArguments = require('./isArguments'),
+    isArray = require('./isArray'),
+    isLength = require('./isLength'),
+    isString = require('./isString');
+
+/**
+ * Creates an array of index keys for `object` values of arrays,
+ * `arguments` objects, and strings, otherwise `null` is returned.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array|null} Returns index keys, else `null`.
+ */
+function indexKeys(object) {
+  var length = object ? object.length : undefined;
+  if (isLength(length) &&
+      (isArray(object) || isString(object) || isArguments(object))) {
+    return baseTimes(length, String);
+  }
+  return null;
+}
+
+module.exports = indexKeys;
+  })();
+});
+
+require.register("lodash/_initCloneArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Initializes an array clone.
+ *
+ * @private
+ * @param {Array} array The array to clone.
+ * @returns {Array} Returns the initialized clone.
+ */
+function initCloneArray(array) {
+  var length = array.length,
+      result = array.constructor(length);
+
+  // Add properties assigned by `RegExp#exec`.
+  if (length && typeof array[0] == 'string' && hasOwnProperty.call(array, 'index')) {
+    result.index = array.index;
+    result.input = array.input;
+  }
+  return result;
+}
+
+module.exports = initCloneArray;
+  })();
+});
+
+require.register("lodash/_initCloneByTag.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var cloneArrayBuffer = require('./_cloneArrayBuffer'),
+    cloneDataView = require('./_cloneDataView'),
+    cloneMap = require('./_cloneMap'),
+    cloneRegExp = require('./_cloneRegExp'),
+    cloneSet = require('./_cloneSet'),
+    cloneSymbol = require('./_cloneSymbol'),
+    cloneTypedArray = require('./_cloneTypedArray');
+
+/** `Object#toString` result references. */
+var boolTag = '[object Boolean]',
+    dateTag = '[object Date]',
+    mapTag = '[object Map]',
+    numberTag = '[object Number]',
+    regexpTag = '[object RegExp]',
+    setTag = '[object Set]',
+    stringTag = '[object String]',
+    symbolTag = '[object Symbol]';
+
+var arrayBufferTag = '[object ArrayBuffer]',
+    dataViewTag = '[object DataView]',
+    float32Tag = '[object Float32Array]',
+    float64Tag = '[object Float64Array]',
+    int8Tag = '[object Int8Array]',
+    int16Tag = '[object Int16Array]',
+    int32Tag = '[object Int32Array]',
+    uint8Tag = '[object Uint8Array]',
+    uint8ClampedTag = '[object Uint8ClampedArray]',
+    uint16Tag = '[object Uint16Array]',
+    uint32Tag = '[object Uint32Array]';
+
+/**
+ * Initializes an object clone based on its `toStringTag`.
+ *
+ * **Note:** This function only supports cloning values with tags of
+ * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
+ *
+ * @private
+ * @param {Object} object The object to clone.
+ * @param {string} tag The `toStringTag` of the object to clone.
+ * @param {Function} cloneFunc The function to clone values.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Object} Returns the initialized clone.
+ */
+function initCloneByTag(object, tag, cloneFunc, isDeep) {
+  var Ctor = object.constructor;
+  switch (tag) {
+    case arrayBufferTag:
+      return cloneArrayBuffer(object);
+
+    case boolTag:
+    case dateTag:
+      return new Ctor(+object);
+
+    case dataViewTag:
+      return cloneDataView(object, isDeep);
+
+    case float32Tag: case float64Tag:
+    case int8Tag: case int16Tag: case int32Tag:
+    case uint8Tag: case uint8ClampedTag: case uint16Tag: case uint32Tag:
+      return cloneTypedArray(object, isDeep);
+
+    case mapTag:
+      return cloneMap(object, isDeep, cloneFunc);
+
+    case numberTag:
+    case stringTag:
+      return new Ctor(object);
+
+    case regexpTag:
+      return cloneRegExp(object);
+
+    case setTag:
+      return cloneSet(object, isDeep, cloneFunc);
+
+    case symbolTag:
+      return cloneSymbol(object);
+  }
+}
+
+module.exports = initCloneByTag;
+  })();
+});
+
+require.register("lodash/_initCloneObject.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseCreate = require('./_baseCreate'),
+    getPrototype = require('./_getPrototype'),
+    isPrototype = require('./_isPrototype');
+
+/**
+ * Initializes an object clone.
+ *
+ * @private
+ * @param {Object} object The object to clone.
+ * @returns {Object} Returns the initialized clone.
+ */
+function initCloneObject(object) {
+  return (typeof object.constructor == 'function' && !isPrototype(object))
+    ? baseCreate(getPrototype(object))
+    : {};
+}
+
+module.exports = initCloneObject;
   })();
 });
 
@@ -12697,6 +17025,503 @@ module.exports = isHostObject;
   })();
 });
 
+require.register("lodash/_isIndex.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/** Used to detect unsigned integer values. */
+var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  length = length == null ? MAX_SAFE_INTEGER : length;
+  return !!length &&
+    (typeof value == 'number' || reIsUint.test(value)) &&
+    (value > -1 && value % 1 == 0 && value < length);
+}
+
+module.exports = isIndex;
+  })();
+});
+
+require.register("lodash/_isKey.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isArray = require('./isArray'),
+    isSymbol = require('./isSymbol');
+
+/** Used to match property names within property paths. */
+var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/,
+    reIsPlainProp = /^\w*$/;
+
+/**
+ * Checks if `value` is a property name and not a property path.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {Object} [object] The object to query keys on.
+ * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
+ */
+function isKey(value, object) {
+  if (isArray(value)) {
+    return false;
+  }
+  var type = typeof value;
+  if (type == 'number' || type == 'symbol' || type == 'boolean' ||
+      value == null || isSymbol(value)) {
+    return true;
+  }
+  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) ||
+    (object != null && value in Object(object));
+}
+
+module.exports = isKey;
+  })();
+});
+
+require.register("lodash/_isKeyable.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Checks if `value` is suitable for use as unique object key.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
+ */
+function isKeyable(value) {
+  var type = typeof value;
+  return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
+    ? (value !== '__proto__')
+    : (value === null);
+}
+
+module.exports = isKeyable;
+  })();
+});
+
+require.register("lodash/_isMasked.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var coreJsData = require('./_coreJsData');
+
+/** Used to detect methods masquerading as native. */
+var maskSrcKey = (function() {
+  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+  return uid ? ('Symbol(src)_1.' + uid) : '';
+}());
+
+/**
+ * Checks if `func` has its source masked.
+ *
+ * @private
+ * @param {Function} func The function to check.
+ * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+ */
+function isMasked(func) {
+  return !!maskSrcKey && (maskSrcKey in func);
+}
+
+module.exports = isMasked;
+  })();
+});
+
+require.register("lodash/_isPrototype.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Checks if `value` is likely a prototype object.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+ */
+function isPrototype(value) {
+  var Ctor = value && value.constructor,
+      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
+
+  return value === proto;
+}
+
+module.exports = isPrototype;
+  })();
+});
+
+require.register("lodash/_isStrictComparable.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isObject = require('./isObject');
+
+/**
+ * Checks if `value` is suitable for strict equality comparisons, i.e. `===`.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` if suitable for strict
+ *  equality comparisons, else `false`.
+ */
+function isStrictComparable(value) {
+  return value === value && !isObject(value);
+}
+
+module.exports = isStrictComparable;
+  })();
+});
+
+require.register("lodash/_listCacheClear.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Removes all key-value entries from the list cache.
+ *
+ * @private
+ * @name clear
+ * @memberOf ListCache
+ */
+function listCacheClear() {
+  this.__data__ = [];
+}
+
+module.exports = listCacheClear;
+  })();
+});
+
+require.register("lodash/_listCacheDelete.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var assocIndexOf = require('./_assocIndexOf');
+
+/** Used for built-in method references. */
+var arrayProto = Array.prototype;
+
+/** Built-in value references. */
+var splice = arrayProto.splice;
+
+/**
+ * Removes `key` and its value from the list cache.
+ *
+ * @private
+ * @name delete
+ * @memberOf ListCache
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function listCacheDelete(key) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  if (index < 0) {
+    return false;
+  }
+  var lastIndex = data.length - 1;
+  if (index == lastIndex) {
+    data.pop();
+  } else {
+    splice.call(data, index, 1);
+  }
+  return true;
+}
+
+module.exports = listCacheDelete;
+  })();
+});
+
+require.register("lodash/_listCacheGet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var assocIndexOf = require('./_assocIndexOf');
+
+/**
+ * Gets the list cache value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf ListCache
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function listCacheGet(key) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  return index < 0 ? undefined : data[index][1];
+}
+
+module.exports = listCacheGet;
+  })();
+});
+
+require.register("lodash/_listCacheHas.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var assocIndexOf = require('./_assocIndexOf');
+
+/**
+ * Checks if a list cache value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf ListCache
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function listCacheHas(key) {
+  return assocIndexOf(this.__data__, key) > -1;
+}
+
+module.exports = listCacheHas;
+  })();
+});
+
+require.register("lodash/_listCacheSet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var assocIndexOf = require('./_assocIndexOf');
+
+/**
+ * Sets the list cache `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf ListCache
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the list cache instance.
+ */
+function listCacheSet(key, value) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  if (index < 0) {
+    data.push([key, value]);
+  } else {
+    data[index][1] = value;
+  }
+  return this;
+}
+
+module.exports = listCacheSet;
+  })();
+});
+
+require.register("lodash/_mapCacheClear.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var Hash = require('./_Hash'),
+    ListCache = require('./_ListCache'),
+    Map = require('./_Map');
+
+/**
+ * Removes all key-value entries from the map.
+ *
+ * @private
+ * @name clear
+ * @memberOf MapCache
+ */
+function mapCacheClear() {
+  this.__data__ = {
+    'hash': new Hash,
+    'map': new (Map || ListCache),
+    'string': new Hash
+  };
+}
+
+module.exports = mapCacheClear;
+  })();
+});
+
+require.register("lodash/_mapCacheDelete.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getMapData = require('./_getMapData');
+
+/**
+ * Removes `key` and its value from the map.
+ *
+ * @private
+ * @name delete
+ * @memberOf MapCache
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function mapCacheDelete(key) {
+  return getMapData(this, key)['delete'](key);
+}
+
+module.exports = mapCacheDelete;
+  })();
+});
+
+require.register("lodash/_mapCacheGet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getMapData = require('./_getMapData');
+
+/**
+ * Gets the map value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf MapCache
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function mapCacheGet(key) {
+  return getMapData(this, key).get(key);
+}
+
+module.exports = mapCacheGet;
+  })();
+});
+
+require.register("lodash/_mapCacheHas.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getMapData = require('./_getMapData');
+
+/**
+ * Checks if a map value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf MapCache
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function mapCacheHas(key) {
+  return getMapData(this, key).has(key);
+}
+
+module.exports = mapCacheHas;
+  })();
+});
+
+require.register("lodash/_mapCacheSet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getMapData = require('./_getMapData');
+
+/**
+ * Sets the map `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf MapCache
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the map cache instance.
+ */
+function mapCacheSet(key, value) {
+  getMapData(this, key).set(key, value);
+  return this;
+}
+
+module.exports = mapCacheSet;
+  })();
+});
+
+require.register("lodash/_mapToArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Converts `map` to its key-value pairs.
+ *
+ * @private
+ * @param {Object} map The map to convert.
+ * @returns {Array} Returns the key-value pairs.
+ */
+function mapToArray(map) {
+  var index = -1,
+      result = Array(map.size);
+
+  map.forEach(function(value, key) {
+    result[++index] = [key, value];
+  });
+  return result;
+}
+
+module.exports = mapToArray;
+  })();
+});
+
+require.register("lodash/_matchesStrictComparable.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * A specialized version of `matchesProperty` for source values suitable
+ * for strict equality comparisons, i.e. `===`.
+ *
+ * @private
+ * @param {string} key The key of the property to get.
+ * @param {*} srcValue The value to match.
+ * @returns {Function} Returns the new spec function.
+ */
+function matchesStrictComparable(key, srcValue) {
+  return function(object) {
+    if (object == null) {
+      return false;
+    }
+    return object[key] === srcValue &&
+      (srcValue !== undefined || (key in Object(object)));
+  };
+}
+
+module.exports = matchesStrictComparable;
+  })();
+});
+
+require.register("lodash/_nativeCreate.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getNative = require('./_getNative');
+
+/* Built-in method references that are verified to be native. */
+var nativeCreate = getNative(Object, 'create');
+
+module.exports = nativeCreate;
+  })();
+});
+
+require.register("lodash/_nodeUtil.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var freeGlobal = require('./_freeGlobal');
+
+/** Detect free variable `exports`. */
+var freeExports = freeGlobal && typeof exports == 'object' && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && typeof module == 'object' && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Detect free variable `process` from Node.js. */
+var freeProcess = moduleExports && freeGlobal.process;
+
+/** Used to access faster Node.js helpers. */
+var nodeUtil = (function() {
+  try {
+    return freeProcess && freeProcess.binding('util');
+  } catch (e) {}
+}());
+
+module.exports = nodeUtil;
+  })();
+});
+
 require.register("lodash/_overArg.js", function(exports, require, module) {
   require = __makeRelativeRequire(require, {}, "lodash");
   (function() {
@@ -12715,6 +17540,1005 @@ function overArg(func, transform) {
 }
 
 module.exports = overArg;
+  })();
+});
+
+require.register("lodash/_root.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var freeGlobal = require('./_freeGlobal');
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+module.exports = root;
+  })();
+});
+
+require.register("lodash/_setCacheAdd.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/**
+ * Adds `value` to the array cache.
+ *
+ * @private
+ * @name add
+ * @memberOf SetCache
+ * @alias push
+ * @param {*} value The value to cache.
+ * @returns {Object} Returns the cache instance.
+ */
+function setCacheAdd(value) {
+  this.__data__.set(value, HASH_UNDEFINED);
+  return this;
+}
+
+module.exports = setCacheAdd;
+  })();
+});
+
+require.register("lodash/_setCacheHas.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Checks if `value` is in the array cache.
+ *
+ * @private
+ * @name has
+ * @memberOf SetCache
+ * @param {*} value The value to search for.
+ * @returns {number} Returns `true` if `value` is found, else `false`.
+ */
+function setCacheHas(value) {
+  return this.__data__.has(value);
+}
+
+module.exports = setCacheHas;
+  })();
+});
+
+require.register("lodash/_setToArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Converts `set` to an array of its values.
+ *
+ * @private
+ * @param {Object} set The set to convert.
+ * @returns {Array} Returns the values.
+ */
+function setToArray(set) {
+  var index = -1,
+      result = Array(set.size);
+
+  set.forEach(function(value) {
+    result[++index] = value;
+  });
+  return result;
+}
+
+module.exports = setToArray;
+  })();
+});
+
+require.register("lodash/_stackClear.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var ListCache = require('./_ListCache');
+
+/**
+ * Removes all key-value entries from the stack.
+ *
+ * @private
+ * @name clear
+ * @memberOf Stack
+ */
+function stackClear() {
+  this.__data__ = new ListCache;
+}
+
+module.exports = stackClear;
+  })();
+});
+
+require.register("lodash/_stackDelete.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Removes `key` and its value from the stack.
+ *
+ * @private
+ * @name delete
+ * @memberOf Stack
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function stackDelete(key) {
+  return this.__data__['delete'](key);
+}
+
+module.exports = stackDelete;
+  })();
+});
+
+require.register("lodash/_stackGet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Gets the stack value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf Stack
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function stackGet(key) {
+  return this.__data__.get(key);
+}
+
+module.exports = stackGet;
+  })();
+});
+
+require.register("lodash/_stackHas.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Checks if a stack value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf Stack
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function stackHas(key) {
+  return this.__data__.has(key);
+}
+
+module.exports = stackHas;
+  })();
+});
+
+require.register("lodash/_stackSet.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var ListCache = require('./_ListCache'),
+    Map = require('./_Map'),
+    MapCache = require('./_MapCache');
+
+/** Used as the size to enable large array optimizations. */
+var LARGE_ARRAY_SIZE = 200;
+
+/**
+ * Sets the stack `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf Stack
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the stack cache instance.
+ */
+function stackSet(key, value) {
+  var cache = this.__data__;
+  if (cache instanceof ListCache) {
+    var pairs = cache.__data__;
+    if (!Map || (pairs.length < LARGE_ARRAY_SIZE - 1)) {
+      pairs.push([key, value]);
+      return this;
+    }
+    cache = this.__data__ = new MapCache(pairs);
+  }
+  cache.set(key, value);
+  return this;
+}
+
+module.exports = stackSet;
+  })();
+});
+
+require.register("lodash/_stringToPath.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var memoize = require('./memoize'),
+    toString = require('./toString');
+
+/** Used to match property names within property paths. */
+var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(\.|\[\])(?:\4|$))/g;
+
+/** Used to match backslashes in property paths. */
+var reEscapeChar = /\\(\\)?/g;
+
+/**
+ * Converts `string` to a property path array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the property path array.
+ */
+var stringToPath = memoize(function(string) {
+  var result = [];
+  toString(string).replace(rePropName, function(match, number, quote, string) {
+    result.push(quote ? string.replace(reEscapeChar, '$1') : (number || match));
+  });
+  return result;
+});
+
+module.exports = stringToPath;
+  })();
+});
+
+require.register("lodash/_toKey.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isSymbol = require('./isSymbol');
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/**
+ * Converts `value` to a string key if it's not a string or symbol.
+ *
+ * @private
+ * @param {*} value The value to inspect.
+ * @returns {string|symbol} Returns the key.
+ */
+function toKey(value) {
+  if (typeof value == 'string' || isSymbol(value)) {
+    return value;
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+module.exports = toKey;
+  })();
+});
+
+require.register("lodash/_toSource.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used to resolve the decompiled source of functions. */
+var funcToString = Function.prototype.toString;
+
+/**
+ * Converts `func` to its source code.
+ *
+ * @private
+ * @param {Function} func The function to process.
+ * @returns {string} Returns the source code.
+ */
+function toSource(func) {
+  if (func != null) {
+    try {
+      return funcToString.call(func);
+    } catch (e) {}
+    try {
+      return (func + '');
+    } catch (e) {}
+  }
+  return '';
+}
+
+module.exports = toSource;
+  })();
+});
+
+require.register("lodash/cloneDeep.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseClone = require('./_baseClone');
+
+/**
+ * This method is like `_.clone` except that it recursively clones `value`.
+ *
+ * @static
+ * @memberOf _
+ * @since 1.0.0
+ * @category Lang
+ * @param {*} value The value to recursively clone.
+ * @returns {*} Returns the deep cloned value.
+ * @see _.clone
+ * @example
+ *
+ * var objects = [{ 'a': 1 }, { 'b': 2 }];
+ *
+ * var deep = _.cloneDeep(objects);
+ * console.log(deep[0] === objects[0]);
+ * // => false
+ */
+function cloneDeep(value) {
+  return baseClone(value, true, true);
+}
+
+module.exports = cloneDeep;
+  })();
+});
+
+require.register("lodash/eq.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Performs a
+ * [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
+ * comparison between two values to determine if they are equivalent.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ * var other = { 'a': 1 };
+ *
+ * _.eq(object, object);
+ * // => true
+ *
+ * _.eq(object, other);
+ * // => false
+ *
+ * _.eq('a', 'a');
+ * // => true
+ *
+ * _.eq('a', Object('a'));
+ * // => false
+ *
+ * _.eq(NaN, NaN);
+ * // => true
+ */
+function eq(value, other) {
+  return value === other || (value !== value && other !== other);
+}
+
+module.exports = eq;
+  })();
+});
+
+require.register("lodash/find.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var createFind = require('./_createFind'),
+    findIndex = require('./findIndex');
+
+/**
+ * Iterates over elements of `collection`, returning the first element
+ * `predicate` returns truthy for. The predicate is invoked with three
+ * arguments: (value, index|key, collection).
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Collection
+ * @param {Array|Object} collection The collection to search.
+ * @param {Function} [predicate=_.identity]
+ *  The function invoked per iteration.
+ * @param {number} [fromIndex=0] The index to search from.
+ * @returns {*} Returns the matched element, else `undefined`.
+ * @example
+ *
+ * var users = [
+ *   { 'user': 'barney',  'age': 36, 'active': true },
+ *   { 'user': 'fred',    'age': 40, 'active': false },
+ *   { 'user': 'pebbles', 'age': 1,  'active': true }
+ * ];
+ *
+ * _.find(users, function(o) { return o.age < 40; });
+ * // => object for 'barney'
+ *
+ * // The `_.matches` iteratee shorthand.
+ * _.find(users, { 'age': 1, 'active': true });
+ * // => object for 'pebbles'
+ *
+ * // The `_.matchesProperty` iteratee shorthand.
+ * _.find(users, ['active', false]);
+ * // => object for 'fred'
+ *
+ * // The `_.property` iteratee shorthand.
+ * _.find(users, 'active');
+ * // => object for 'barney'
+ */
+var find = createFind(findIndex);
+
+module.exports = find;
+  })();
+});
+
+require.register("lodash/findIndex.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseFindIndex = require('./_baseFindIndex'),
+    baseIteratee = require('./_baseIteratee'),
+    toInteger = require('./toInteger');
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeMax = Math.max;
+
+/**
+ * This method is like `_.find` except that it returns the index of the first
+ * element `predicate` returns truthy for instead of the element itself.
+ *
+ * @static
+ * @memberOf _
+ * @since 1.1.0
+ * @category Array
+ * @param {Array} array The array to search.
+ * @param {Function} [predicate=_.identity]
+ *  The function invoked per iteration.
+ * @param {number} [fromIndex=0] The index to search from.
+ * @returns {number} Returns the index of the found element, else `-1`.
+ * @example
+ *
+ * var users = [
+ *   { 'user': 'barney',  'active': false },
+ *   { 'user': 'fred',    'active': false },
+ *   { 'user': 'pebbles', 'active': true }
+ * ];
+ *
+ * _.findIndex(users, function(o) { return o.user == 'barney'; });
+ * // => 0
+ *
+ * // The `_.matches` iteratee shorthand.
+ * _.findIndex(users, { 'user': 'fred', 'active': false });
+ * // => 1
+ *
+ * // The `_.matchesProperty` iteratee shorthand.
+ * _.findIndex(users, ['active', false]);
+ * // => 0
+ *
+ * // The `_.property` iteratee shorthand.
+ * _.findIndex(users, 'active');
+ * // => 2
+ */
+function findIndex(array, predicate, fromIndex) {
+  var length = array ? array.length : 0;
+  if (!length) {
+    return -1;
+  }
+  var index = fromIndex == null ? 0 : toInteger(fromIndex);
+  if (index < 0) {
+    index = nativeMax(length + index, 0);
+  }
+  return baseFindIndex(array, baseIteratee(predicate, 3), index);
+}
+
+module.exports = findIndex;
+  })();
+});
+
+require.register("lodash/get.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseGet = require('./_baseGet');
+
+/**
+ * Gets the value at `path` of `object`. If the resolved value is
+ * `undefined`, the `defaultValue` is returned in its place.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.7.0
+ * @category Object
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path of the property to get.
+ * @param {*} [defaultValue] The value returned for `undefined` resolved values.
+ * @returns {*} Returns the resolved value.
+ * @example
+ *
+ * var object = { 'a': [{ 'b': { 'c': 3 } }] };
+ *
+ * _.get(object, 'a[0].b.c');
+ * // => 3
+ *
+ * _.get(object, ['a', '0', 'b', 'c']);
+ * // => 3
+ *
+ * _.get(object, 'a.b.c', 'default');
+ * // => 'default'
+ */
+function get(object, path, defaultValue) {
+  var result = object == null ? undefined : baseGet(object, path);
+  return result === undefined ? defaultValue : result;
+}
+
+module.exports = get;
+  })();
+});
+
+require.register("lodash/has.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseHas = require('./_baseHas'),
+    hasPath = require('./_hasPath');
+
+/**
+ * Checks if `path` is a direct property of `object`.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path to check.
+ * @returns {boolean} Returns `true` if `path` exists, else `false`.
+ * @example
+ *
+ * var object = { 'a': { 'b': 2 } };
+ * var other = _.create({ 'a': _.create({ 'b': 2 }) });
+ *
+ * _.has(object, 'a');
+ * // => true
+ *
+ * _.has(object, 'a.b');
+ * // => true
+ *
+ * _.has(object, ['a', 'b']);
+ * // => true
+ *
+ * _.has(other, 'a');
+ * // => false
+ */
+function has(object, path) {
+  return object != null && hasPath(object, path, baseHas);
+}
+
+module.exports = has;
+  })();
+});
+
+require.register("lodash/hasIn.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseHasIn = require('./_baseHasIn'),
+    hasPath = require('./_hasPath');
+
+/**
+ * Checks if `path` is a direct or inherited property of `object`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Object
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path to check.
+ * @returns {boolean} Returns `true` if `path` exists, else `false`.
+ * @example
+ *
+ * var object = _.create({ 'a': _.create({ 'b': 2 }) });
+ *
+ * _.hasIn(object, 'a');
+ * // => true
+ *
+ * _.hasIn(object, 'a.b');
+ * // => true
+ *
+ * _.hasIn(object, ['a', 'b']);
+ * // => true
+ *
+ * _.hasIn(object, 'b');
+ * // => false
+ */
+function hasIn(object, path) {
+  return object != null && hasPath(object, path, baseHasIn);
+}
+
+module.exports = hasIn;
+  })();
+});
+
+require.register("lodash/identity.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * This method returns the first argument it receives.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Util
+ * @param {*} value Any value.
+ * @returns {*} Returns `value`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ *
+ * console.log(_.identity(object) === object);
+ * // => true
+ */
+function identity(value) {
+  return value;
+}
+
+module.exports = identity;
+  })();
+});
+
+require.register("lodash/isArguments.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isArrayLikeObject = require('./isArrayLikeObject');
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Built-in value references. */
+var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+function isArguments(value) {
+  // Safari 8.1 incorrectly makes `arguments.callee` enumerable in strict mode.
+  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
+    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
+}
+
+module.exports = isArguments;
+  })();
+});
+
+require.register("lodash/isArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+module.exports = isArray;
+  })();
+});
+
+require.register("lodash/isArrayLike.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var getLength = require('./_getLength'),
+    isFunction = require('./isFunction'),
+    isLength = require('./isLength');
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(getLength(value)) && !isFunction(value);
+}
+
+module.exports = isArrayLike;
+  })();
+});
+
+require.register("lodash/isArrayLikeObject.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isArrayLike = require('./isArrayLike'),
+    isObjectLike = require('./isObjectLike');
+
+/**
+ * This method is like `_.isArrayLike` except that it also checks if `value`
+ * is an object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array-like object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArrayLikeObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLikeObject(document.body.children);
+ * // => true
+ *
+ * _.isArrayLikeObject('abc');
+ * // => false
+ *
+ * _.isArrayLikeObject(_.noop);
+ * // => false
+ */
+function isArrayLikeObject(value) {
+  return isObjectLike(value) && isArrayLike(value);
+}
+
+module.exports = isArrayLikeObject;
+  })();
+});
+
+require.register("lodash/isBuffer.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  var _Buffer = require('buffer'); var Buffer = _Buffer && _Buffer.Buffer;
+(function() {
+    var freeGlobal = require('./_freeGlobal'),
+    root = require('./_root'),
+    stubFalse = require('./stubFalse');
+
+/** Detect free variable `exports`. */
+var freeExports = freeGlobal && typeof exports == 'object' && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && typeof module == 'object' && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Built-in value references. */
+var Buffer = moduleExports ? root.Buffer : undefined;
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined;
+
+/**
+ * Checks if `value` is a buffer.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.3.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
+ * @example
+ *
+ * _.isBuffer(new Buffer(2));
+ * // => true
+ *
+ * _.isBuffer(new Uint8Array(2));
+ * // => false
+ */
+var isBuffer = nativeIsBuffer || stubFalse;
+
+module.exports = isBuffer;
+  })();
+});
+
+require.register("lodash/isEqual.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIsEqual = require('./_baseIsEqual');
+
+/**
+ * Performs a deep comparison between two values to determine if they are
+ * equivalent.
+ *
+ * **Note:** This method supports comparing arrays, array buffers, booleans,
+ * date objects, error objects, maps, numbers, `Object` objects, regexes,
+ * sets, strings, symbols, and typed arrays. `Object` objects are compared
+ * by their own, not inherited, enumerable properties. Functions and DOM
+ * nodes are **not** supported.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @returns {boolean} Returns `true` if the values are equivalent,
+ *  else `false`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ * var other = { 'a': 1 };
+ *
+ * _.isEqual(object, other);
+ * // => true
+ *
+ * object === other;
+ * // => false
+ */
+function isEqual(value, other) {
+  return baseIsEqual(value, other);
+}
+
+module.exports = isEqual;
+  })();
+});
+
+require.register("lodash/isFunction.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isObject = require('./isObject');
+
+/** `Object#toString` result references. */
+var funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 8 which returns 'object' for typed array and weak map constructors,
+  // and PhantomJS 1.9 which returns 'function' for `NodeList` instances.
+  var tag = isObject(value) ? objectToString.call(value) : '';
+  return tag == funcTag || tag == genTag;
+}
+
+module.exports = isFunction;
+  })();
+});
+
+require.register("lodash/isLength.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This function is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length,
+ *  else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' &&
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+module.exports = isLength;
+  })();
+});
+
+require.register("lodash/isObject.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/6.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+module.exports = isObject;
   })();
 });
 
@@ -12826,6 +18650,557 @@ function isPlainObject(value) {
 }
 
 module.exports = isPlainObject;
+  })();
+});
+
+require.register("lodash/isString.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isArray = require('./isArray'),
+    isObjectLike = require('./isObjectLike');
+
+/** `Object#toString` result references. */
+var stringTag = '[object String]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * Checks if `value` is classified as a `String` primitive or object.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a string, else `false`.
+ * @example
+ *
+ * _.isString('abc');
+ * // => true
+ *
+ * _.isString(1);
+ * // => false
+ */
+function isString(value) {
+  return typeof value == 'string' ||
+    (!isArray(value) && isObjectLike(value) && objectToString.call(value) == stringTag);
+}
+
+module.exports = isString;
+  })();
+});
+
+require.register("lodash/isSymbol.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isObjectLike = require('./isObjectLike');
+
+/** `Object#toString` result references. */
+var symbolTag = '[object Symbol]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && objectToString.call(value) == symbolTag);
+}
+
+module.exports = isSymbol;
+  })();
+});
+
+require.register("lodash/isTypedArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseIsTypedArray = require('./_baseIsTypedArray'),
+    baseUnary = require('./_baseUnary'),
+    nodeUtil = require('./_nodeUtil');
+
+/* Node.js helper references. */
+var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
+
+/**
+ * Checks if `value` is classified as a typed array.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ * @example
+ *
+ * _.isTypedArray(new Uint8Array);
+ * // => true
+ *
+ * _.isTypedArray([]);
+ * // => false
+ */
+var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+module.exports = isTypedArray;
+  })();
+});
+
+require.register("lodash/keys.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseHas = require('./_baseHas'),
+    baseKeys = require('./_baseKeys'),
+    indexKeys = require('./_indexKeys'),
+    isArrayLike = require('./isArrayLike'),
+    isIndex = require('./_isIndex'),
+    isPrototype = require('./_isPrototype');
+
+/**
+ * Creates an array of the own enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects. See the
+ * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
+ * for more details.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keys(new Foo);
+ * // => ['a', 'b'] (iteration order is not guaranteed)
+ *
+ * _.keys('hi');
+ * // => ['0', '1']
+ */
+function keys(object) {
+  var isProto = isPrototype(object);
+  if (!(isProto || isArrayLike(object))) {
+    return baseKeys(object);
+  }
+  var indexes = indexKeys(object),
+      skipIndexes = !!indexes,
+      result = indexes || [],
+      length = result.length;
+
+  for (var key in object) {
+    if (baseHas(object, key) &&
+        !(skipIndexes && (key == 'length' || isIndex(key, length))) &&
+        !(isProto && key == 'constructor')) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+module.exports = keys;
+  })();
+});
+
+require.register("lodash/memoize.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var MapCache = require('./_MapCache');
+
+/** Used as the `TypeError` message for "Functions" methods. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/**
+ * Creates a function that memoizes the result of `func`. If `resolver` is
+ * provided, it determines the cache key for storing the result based on the
+ * arguments provided to the memoized function. By default, the first argument
+ * provided to the memoized function is used as the map cache key. The `func`
+ * is invoked with the `this` binding of the memoized function.
+ *
+ * **Note:** The cache is exposed as the `cache` property on the memoized
+ * function. Its creation may be customized by replacing the `_.memoize.Cache`
+ * constructor with one whose instances implement the
+ * [`Map`](http://ecma-international.org/ecma-262/6.0/#sec-properties-of-the-map-prototype-object)
+ * method interface of `delete`, `get`, `has`, and `set`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Function
+ * @param {Function} func The function to have its output memoized.
+ * @param {Function} [resolver] The function to resolve the cache key.
+ * @returns {Function} Returns the new memoized function.
+ * @example
+ *
+ * var object = { 'a': 1, 'b': 2 };
+ * var other = { 'c': 3, 'd': 4 };
+ *
+ * var values = _.memoize(_.values);
+ * values(object);
+ * // => [1, 2]
+ *
+ * values(other);
+ * // => [3, 4]
+ *
+ * object.a = 2;
+ * values(object);
+ * // => [1, 2]
+ *
+ * // Modify the result cache.
+ * values.cache.set(object, ['a', 'b']);
+ * values(object);
+ * // => ['a', 'b']
+ *
+ * // Replace `_.memoize.Cache`.
+ * _.memoize.Cache = WeakMap;
+ */
+function memoize(func, resolver) {
+  if (typeof func != 'function' || (resolver && typeof resolver != 'function')) {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  var memoized = function() {
+    var args = arguments,
+        key = resolver ? resolver.apply(this, args) : args[0],
+        cache = memoized.cache;
+
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    var result = func.apply(this, args);
+    memoized.cache = cache.set(key, result);
+    return result;
+  };
+  memoized.cache = new (memoize.Cache || MapCache);
+  return memoized;
+}
+
+// Assign cache to `_.memoize`.
+memoize.Cache = MapCache;
+
+module.exports = memoize;
+  })();
+});
+
+require.register("lodash/property.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseProperty = require('./_baseProperty'),
+    basePropertyDeep = require('./_basePropertyDeep'),
+    isKey = require('./_isKey'),
+    toKey = require('./_toKey');
+
+/**
+ * Creates a function that returns the value at `path` of a given object.
+ *
+ * @static
+ * @memberOf _
+ * @since 2.4.0
+ * @category Util
+ * @param {Array|string} path The path of the property to get.
+ * @returns {Function} Returns the new accessor function.
+ * @example
+ *
+ * var objects = [
+ *   { 'a': { 'b': 2 } },
+ *   { 'a': { 'b': 1 } }
+ * ];
+ *
+ * _.map(objects, _.property('a.b'));
+ * // => [2, 1]
+ *
+ * _.map(_.sortBy(objects, _.property(['a', 'b'])), 'a.b');
+ * // => [1, 2]
+ */
+function property(path) {
+  return isKey(path) ? baseProperty(toKey(path)) : basePropertyDeep(path);
+}
+
+module.exports = property;
+  })();
+});
+
+require.register("lodash/stubArray.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * This method returns a new empty array.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.13.0
+ * @category Util
+ * @returns {Array} Returns the new empty array.
+ * @example
+ *
+ * var arrays = _.times(2, _.stubArray);
+ *
+ * console.log(arrays);
+ * // => [[], []]
+ *
+ * console.log(arrays[0] === arrays[1]);
+ * // => false
+ */
+function stubArray() {
+  return [];
+}
+
+module.exports = stubArray;
+  })();
+});
+
+require.register("lodash/stubFalse.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    /**
+ * This method returns `false`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.13.0
+ * @category Util
+ * @returns {boolean} Returns `false`.
+ * @example
+ *
+ * _.times(2, _.stubFalse);
+ * // => [false, false]
+ */
+function stubFalse() {
+  return false;
+}
+
+module.exports = stubFalse;
+  })();
+});
+
+require.register("lodash/toFinite.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var toNumber = require('./toNumber');
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0,
+    MAX_INTEGER = 1.7976931348623157e+308;
+
+/**
+ * Converts `value` to a finite number.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.12.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {number} Returns the converted number.
+ * @example
+ *
+ * _.toFinite(3.2);
+ * // => 3.2
+ *
+ * _.toFinite(Number.MIN_VALUE);
+ * // => 5e-324
+ *
+ * _.toFinite(Infinity);
+ * // => 1.7976931348623157e+308
+ *
+ * _.toFinite('3.2');
+ * // => 3.2
+ */
+function toFinite(value) {
+  if (!value) {
+    return value === 0 ? value : 0;
+  }
+  value = toNumber(value);
+  if (value === INFINITY || value === -INFINITY) {
+    var sign = (value < 0 ? -1 : 1);
+    return sign * MAX_INTEGER;
+  }
+  return value === value ? value : 0;
+}
+
+module.exports = toFinite;
+  })();
+});
+
+require.register("lodash/toInteger.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var toFinite = require('./toFinite');
+
+/**
+ * Converts `value` to an integer.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToInteger`](http://www.ecma-international.org/ecma-262/6.0/#sec-tointeger).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {number} Returns the converted integer.
+ * @example
+ *
+ * _.toInteger(3.2);
+ * // => 3
+ *
+ * _.toInteger(Number.MIN_VALUE);
+ * // => 0
+ *
+ * _.toInteger(Infinity);
+ * // => 1.7976931348623157e+308
+ *
+ * _.toInteger('3.2');
+ * // => 3
+ */
+function toInteger(value) {
+  var result = toFinite(value),
+      remainder = result % 1;
+
+  return result === result ? (remainder ? result - remainder : result) : 0;
+}
+
+module.exports = toInteger;
+  })();
+});
+
+require.register("lodash/toNumber.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var isFunction = require('./isFunction'),
+    isObject = require('./isObject'),
+    isSymbol = require('./isSymbol');
+
+/** Used as references for various `Number` constants. */
+var NAN = 0 / 0;
+
+/** Used to match leading and trailing whitespace. */
+var reTrim = /^\s+|\s+$/g;
+
+/** Used to detect bad signed hexadecimal string values. */
+var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+
+/** Used to detect binary string values. */
+var reIsBinary = /^0b[01]+$/i;
+
+/** Used to detect octal string values. */
+var reIsOctal = /^0o[0-7]+$/i;
+
+/** Built-in method references without a dependency on `root`. */
+var freeParseInt = parseInt;
+
+/**
+ * Converts `value` to a number.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to process.
+ * @returns {number} Returns the number.
+ * @example
+ *
+ * _.toNumber(3.2);
+ * // => 3.2
+ *
+ * _.toNumber(Number.MIN_VALUE);
+ * // => 5e-324
+ *
+ * _.toNumber(Infinity);
+ * // => Infinity
+ *
+ * _.toNumber('3.2');
+ * // => 3.2
+ */
+function toNumber(value) {
+  if (typeof value == 'number') {
+    return value;
+  }
+  if (isSymbol(value)) {
+    return NAN;
+  }
+  if (isObject(value)) {
+    var other = isFunction(value.valueOf) ? value.valueOf() : value;
+    value = isObject(other) ? (other + '') : other;
+  }
+  if (typeof value != 'string') {
+    return value === 0 ? value : +value;
+  }
+  value = value.replace(reTrim, '');
+  var isBinary = reIsBinary.test(value);
+  return (isBinary || reIsOctal.test(value))
+    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
+    : (reIsBadHex.test(value) ? NAN : +value);
+}
+
+module.exports = toNumber;
+  })();
+});
+
+require.register("lodash/toString.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "lodash");
+  (function() {
+    var baseToString = require('./_baseToString');
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+module.exports = toString;
   })();
 });
 
@@ -33214,6 +39589,3221 @@ module.exports = require('./lib/React');
   })();
 });
 
+require.register("reactabular-highlight/dist/cell.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-highlight");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _value = require('./value');
+
+var _value2 = _interopRequireDefault(_value);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var highlightCell = function highlightCell(value) {
+  var _ref = arguments.length <= 1 || arguments[1] === undefined ? { rowData: { _highlights: {} } } : arguments[1];
+
+  var rowData = _ref.rowData;
+  var property = _ref.property;
+  return (0, _value2.default)(value, rowData._highlights && rowData._highlights[property]);
+};
+
+exports.default = highlightCell;
+  })();
+});
+
+require.register("reactabular-highlight/dist/highlighter.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-highlight");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+function highlighter() {
+  var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+  var columns = _ref.columns;
+  var matches = _ref.matches;
+  var query = _ref.query;
+
+  if (!columns) {
+    throw new Error('highlighter - Missing columns!');
+  }
+  if (!matches) {
+    throw new Error('highlighter - Missing matches!');
+  }
+  if (!query) {
+    throw new Error('highlighter - Missing query!');
+  }
+
+  return function (rows) {
+    return rows.map(function (row) {
+      var ret = {
+        _highlights: {}
+      };
+
+      columns.forEach(function (column) {
+        var property = column.property;
+        var value = row[property];
+        // Pick resolved value by convention
+        var resolvedValue = row['_' + property] || value;
+
+        ret[property] = value;
+
+        // Retain possibly resolved value
+        if (resolvedValue !== value) {
+          ret['_' + property] = resolvedValue;
+        }
+
+        if (typeof property === 'undefined') {
+          return;
+        }
+
+        // Stash highlighted value based on index
+        // so it can be extracted later for highlighting
+        ret._highlights[property] = matches({
+          value: resolvedValue,
+          query: query[property] || query.all
+        });
+      });
+
+      // Capture original row data too
+      return _extends({}, row, ret);
+    });
+  };
+}
+
+exports.default = highlighter;
+  })();
+});
+
+require.register("reactabular-highlight/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-highlight");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _cell = require('./cell');
+
+Object.defineProperty(exports, 'cell', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_cell).default;
+  }
+});
+
+var _value = require('./value');
+
+Object.defineProperty(exports, 'value', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_value).default;
+  }
+});
+
+var _highlighter = require('./highlighter');
+
+Object.defineProperty(exports, 'highlighter', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_highlighter).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-highlight/dist/value.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-highlight");
+  (function() {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var highlightValue = function highlightValue(value, highlights) {
+  if (!highlights) {
+    return _react2.default.createElement(
+      "span",
+      null,
+      value
+    );
+  }
+
+  var val = String(value); // deals with arrays/numbers/...
+
+  var children = [];
+  var currentPosition = 0;
+  var x = 0;
+
+  for (x = 0; x < highlights.length; x++) {
+    var nonMatchingPrefix = val.slice(currentPosition, highlights[x].startIndex);
+    var matchingText = val.slice(highlights[x].startIndex, highlights[x].startIndex + highlights[x].length);
+
+    currentPosition = highlights[x].startIndex + highlights[x].length;
+
+    if (nonMatchingPrefix.length > 0) {
+      children.push(_react2.default.createElement(
+        "span",
+        { key: x + "-nonmatch" },
+        nonMatchingPrefix
+      ));
+    }
+    children.push(_react2.default.createElement(
+      "span",
+      { className: "highlight", key: x + "-match" },
+      matchingText
+    ));
+  }
+  children.push(_react2.default.createElement(
+    "span",
+    { key: x + "-remainder" },
+    val.slice(currentPosition)
+  ));
+
+  return _react2.default.createElement(
+    "span",
+    { className: "search-result" },
+    children
+  );
+};
+
+exports.default = highlightValue;
+  })();
+});
+
+require.register("reactabular-resizable/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resizable");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _resizable_column = require('./resizable_column');
+
+var _resizable_column2 = _interopRequireDefault(_resizable_column);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = _resizable_column2.default;
+  })();
+});
+
+require.register("reactabular-resizable/dist/resizable_column.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resizable");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// Adapted from https://stackoverflow.com/questions/20926551/recommended-way-of-making-react-component-div-draggable
+var resizableColumn = function resizableColumn(_ref) {
+  var _ref$parent = _ref.parent;
+  var parent = _ref$parent === undefined ? document : _ref$parent;
+  var onDrag = _ref.onDrag;
+  var _ref$minWidth = _ref.minWidth;
+  var minWidth = _ref$minWidth === undefined ? 100 : _ref$minWidth;
+  var _ref$styles = _ref.styles;
+  var styles = _ref$styles === undefined ? {
+    container: {},
+    value: {},
+    handle: {}
+  } : _ref$styles;
+
+  if (!onDrag) {
+    throw new Error('resizableColumn - Missing onDrag!');
+  }
+
+  return function (label, extraParameters) {
+    var ResizableColumn = function (_React$Component) {
+      _inherits(ResizableColumn, _React$Component);
+
+      function ResizableColumn(props) {
+        _classCallCheck(this, ResizableColumn);
+
+        // Track coordinate rows at instance, no React state needed
+        var _this = _possibleConstructorReturn(this, (ResizableColumn.__proto__ || Object.getPrototypeOf(ResizableColumn)).call(this, props));
+
+        _this.startX = null;
+        _this.startWidth = null;
+
+        _this.onMouseDown = _this.onMouseDown.bind(_this);
+        _this.onMouseMove = _this.onMouseMove.bind(_this);
+        _this.onMouseUp = _this.onMouseUp.bind(_this);
+
+        // Stash ref so we can check width
+        _this.column = null;
+        return _this;
+      }
+
+      _createClass(ResizableColumn, [{
+        key: 'render',
+        value: function render() {
+          var _this2 = this;
+
+          return _react2.default.createElement(
+            'div',
+            {
+              className: 'resize-container',
+              ref: function ref(column) {
+                if (column) {
+                  _this2.column = column;
+                }
+              },
+              style: styles.container
+            },
+            _react2.default.createElement(
+              'span',
+              { className: 'resize-value', style: styles.value },
+              label
+            ),
+            _react2.default.createElement(
+              'span',
+              {
+                className: 'resize-handle',
+                onMouseDown: this.onMouseDown,
+                style: styles.handle
+              },
+              ' '
+            )
+          );
+        }
+      }, {
+        key: 'onMouseDown',
+        value: function onMouseDown(e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          parent.addEventListener('mousemove', this.onMouseMove);
+          parent.addEventListener('mouseup', this.onMouseUp);
+
+          this.startX = e.clientX;
+          this.startWidth = this.column.offsetWidth;
+        }
+      }, {
+        key: 'onMouseMove',
+        value: function onMouseMove(e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          onDrag(Math.max(this.startWidth - this.startX + e.clientX, minWidth), extraParameters);
+        }
+      }, {
+        key: 'onMouseUp',
+        value: function onMouseUp(e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          parent.removeEventListener('mousemove', this.onMouseMove);
+          parent.removeEventListener('mouseup', this.onMouseUp);
+        }
+      }]);
+
+      return ResizableColumn;
+    }(_react2.default.Component);
+
+    return _react2.default.createElement(ResizableColumn);
+  };
+};
+
+exports.default = resizableColumn;
+  })();
+});
+
+require.register("reactabular-resolve/dist/_index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resolve");
+  (function() {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+function index(_ref) {
+  var rowData = _ref.rowData;
+  var rowIndex = _ref.rowIndex;
+
+  return _extends({}, rowData, {
+    _index: rowIndex
+  });
+}
+
+exports.default = index;
+  })();
+});
+
+require.register("reactabular-resolve/dist/by_function.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resolve");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _get = require('lodash/get');
+
+var _get2 = _interopRequireDefault(_get);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function byFunction(path) {
+  return function (_ref) {
+    var rowData = _ref.rowData;
+    var _ref$column = _ref.column;
+    var column = _ref$column === undefined ? {} : _ref$column;
+    var property = column.property;
+
+
+    if (!property) {
+      return rowData;
+    }
+
+    var value = rowData[property];
+    var resolver = (0, _get2.default)(column, path);
+    var ret = _extends({}, rowData, _defineProperty({}, property, value));
+
+    if (resolver) {
+      ret['_' + property] = resolver(value, {
+        property: property,
+        rowData: rowData
+      });
+    }
+
+    return ret;
+  };
+}
+
+exports.default = byFunction;
+  })();
+});
+
+require.register("reactabular-resolve/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resolve");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _resolve = require('./resolve');
+
+Object.defineProperty(exports, 'resolve', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_resolve).default;
+  }
+});
+
+var _index = require('./_index');
+
+Object.defineProperty(exports, 'index', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_index).default;
+  }
+});
+
+var _nested = require('./nested');
+
+Object.defineProperty(exports, 'nested', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_nested).default;
+  }
+});
+
+var _by_function = require('./by_function');
+
+Object.defineProperty(exports, 'byFunction', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_by_function).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-resolve/dist/nested.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resolve");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _get = require('lodash/get');
+
+var _get2 = _interopRequireDefault(_get);
+
+var _has = require('lodash/has');
+
+var _has2 = _interopRequireDefault(_has);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function nested(_ref) {
+  var rowData = _ref.rowData;
+  var column = _ref.column;
+  var property = column.property;
+
+
+  if (!property) {
+    return {};
+  }
+
+  if (!(0, _has2.default)(rowData, property)) {
+    console.warn( // eslint-disable-line no-console
+    'resolve.nested - Failed to find "' + property + '" property from', rowData);
+
+    return {};
+  }
+
+  return _extends({}, rowData, _defineProperty({}, property, (0, _get2.default)(rowData, property)));
+}
+
+exports.default = nested;
+  })();
+});
+
+require.register("reactabular-resolve/dist/resolve.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-resolve");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _reactabularUtils = require('reactabular-utils');
+
+function resolve(_ref) {
+  var columns = _ref.columns;
+  var method = _ref.method;
+
+  if (!columns) {
+    throw new Error('resolve - Missing columns!');
+  }
+  if (!method) {
+    throw new Error('resolve - Missing method!');
+  }
+
+  var resolvedColumns = (0, _reactabularUtils.resolveBodyColumns)(columns);
+
+  return function () {
+    var rows = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+    return rows.map(function (rowData, rowIndex) {
+      var ret = {};
+
+      resolvedColumns.forEach(function (column) {
+        var result = method({
+          rowData: rowData,
+          rowIndex: rowIndex,
+          column: column
+        });
+
+        delete result.undefined;
+
+        ret = _extends({}, rowData, ret, result);
+      });
+
+      return ret;
+    });
+  };
+}
+
+exports.default = resolve;
+  })();
+});
+
+require.register("reactabular-search-columns/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search-columns");
+  (function() {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _react = require("react");
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var SearchColumns = function SearchColumns(_ref) {
+  var columns = _ref.columns;
+  var query = _ref.query;
+  var onChange = _ref.onChange;
+
+  var onQueryChange = function onQueryChange(event) {
+    onChange(_extends({}, query, _defineProperty({}, event.target.name, event.target.value)));
+  };
+
+  return _react2.default.createElement(
+    "tr",
+    null,
+    columns.map(function (column, i) {
+      return _react2.default.createElement(
+        "th",
+        { key: i + "-column-filter", className: "column-filter" },
+        column && column.property ? _react2.default.createElement("input", {
+          onChange: onQueryChange,
+          className: "column-filter-input",
+          name: column.property,
+          placeholder: column.filterPlaceholder || '',
+          value: query[i]
+        }) : ''
+      );
+    })
+  );
+};
+'development' !== "production" ? SearchColumns.propTypes = {
+  columns: _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.object).isRequired,
+  onChange: _react2.default.PropTypes.func.isRequired,
+  query: _react2.default.PropTypes.object
+} : void 0;
+
+exports.default = SearchColumns;
+  })();
+});
+
+require.register("reactabular-search-field/dist/Search.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search-field");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _SearchOptions = require('./SearchOptions');
+
+var _SearchOptions2 = _interopRequireDefault(_SearchOptions);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+var Search = function Search(_ref) {
+  var query = _ref.query;
+  var _ref$column = _ref.column;
+  var column = _ref$column === undefined ? 'all' : _ref$column;
+  var columns = _ref.columns;
+  var i18n = _ref.i18n;
+  var onChange = _ref.onChange;
+  var onColumnChange = _ref.onColumnChange;
+
+  var props = _objectWithoutProperties(_ref, ['query', 'column', 'columns', 'i18n', 'onChange', 'onColumnChange']);
+
+  var onOptionsChange = function onOptionsChange(_ref2) {
+    var value = _ref2.target.value;
+
+    onChange(_defineProperty({}, value, query[value]));
+    onColumnChange(value);
+  };
+  var onQueryChange = function onQueryChange(_ref3) {
+    var value = _ref3.target.value;
+    return onChange(_defineProperty({}, column, value));
+  };
+
+  return _react2.default.createElement(
+    'div',
+    props,
+    _react2.default.createElement(_SearchOptions2.default, {
+      value: column,
+      onChange: onOptionsChange,
+      columns: columns,
+      i18n: i18n
+    }),
+    columns.length ? _react2.default.createElement('input', { type: 'input', onChange: onQueryChange, value: query[column] || '' }) : null
+  );
+};
+'development' !== "production" ? Search.propTypes = {
+  column: _react2.default.PropTypes.string,
+  columns: _react2.default.PropTypes.array,
+  query: _react2.default.PropTypes.object,
+  i18n: _react2.default.PropTypes.shape({
+    all: _react2.default.PropTypes.string
+  }),
+  onChange: _react2.default.PropTypes.func,
+  onColumnChange: _react2.default.PropTypes.func
+} : void 0;
+Search.defaultProps = {
+  columns: [],
+  query: {},
+  i18n: {
+    all: 'All'
+  },
+  onChange: function onChange() {},
+  onColumnChange: function onColumnChange() {}
+};
+
+exports.default = Search;
+  })();
+});
+
+require.register("reactabular-search-field/dist/SearchOptions.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search-field");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+var SearchOptions = function SearchOptions(_ref) {
+  var columns = _ref.columns;
+  var i18n = _ref.i18n;
+  var _ref$onChange = _ref.onChange;
+  var onChange = _ref$onChange === undefined ? function () {} : _ref$onChange;
+  var value = _ref.value;
+
+  var props = _objectWithoutProperties(_ref, ['columns', 'i18n', 'onChange', 'value']);
+
+  return columns.length ? _react2.default.createElement(
+    'select',
+    _extends({ onChange: onChange, value: value }, props),
+    getOptions(columns, i18n).map(function (_ref2) {
+      var name = _ref2.name;
+      var value = _ref2.value;
+      return (// eslint-disable-line no-shadow, max-len
+        _react2.default.createElement(
+          'option',
+          { key: value + '-option', value: value },
+          name
+        )
+      );
+    })
+  ) : null;
+};
+SearchOptions.propTypes = {
+  columns: _react2.default.PropTypes.array,
+  i18n: _react2.default.PropTypes.object,
+  onChange: _react2.default.PropTypes.func,
+  value: _react2.default.PropTypes.any
+};
+
+var getOptions = function getOptions(columns, i18n) {
+  return (columns.length > 1 ? [{
+    value: 'all',
+    name: i18n.all
+  }] : []).concat(columns.map(function (column) {
+    if (column.property && column.header && column.header.label) {
+      return {
+        value: column.property,
+        name: column.header.label
+      };
+    }
+
+    return null;
+  }).filter(function (column) {
+    return column;
+  }));
+};
+
+exports.default = SearchOptions;
+  })();
+});
+
+require.register("reactabular-search-field/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search-field");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _Search = require('./Search');
+
+var _Search2 = _interopRequireDefault(_Search);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = _Search2.default;
+  })();
+});
+
+require.register("reactabular-search/dist/_column_matches.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _strategies = require('./strategies');
+
+var _strategies2 = _interopRequireDefault(_strategies);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _columnMatches = function _columnMatches(_ref) {
+  var query = _ref.query;
+  var _ref$column = _ref.column;
+  var column = _ref$column === undefined ? {} : _ref$column;
+  var row = _ref.row;
+  var _ref$strategy = _ref.strategy;
+  var strategy = _ref$strategy === undefined ? _strategies2.default.infix : _ref$strategy;
+  var _ref$transform = _ref.transform;
+  var transform = _ref$transform === undefined ? function () {
+    var v = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+    return v && v.toLowerCase && v.toLowerCase();
+  } : _ref$transform;
+
+  var property = column.property;
+  // Pick resolved value by convention
+  var resolvedValue = String(row['_' + property] || row[property]);
+
+  return strategy(transform(query)).evaluate(transform(resolvedValue));
+};
+
+exports.default = _columnMatches;
+  })();
+});
+
+require.register("reactabular-search/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _multiple_columns = require('./multiple_columns');
+
+Object.defineProperty(exports, 'multipleColumns', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_multiple_columns).default;
+  }
+});
+
+var _single_column = require('./single_column');
+
+Object.defineProperty(exports, 'singleColumn', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_single_column).default;
+  }
+});
+
+var _column_matches = require('./_column_matches');
+
+Object.defineProperty(exports, '_columnMatches', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_column_matches).default;
+  }
+});
+
+var _matches = require('./matches');
+
+Object.defineProperty(exports, 'matches', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_matches).default;
+  }
+});
+
+var _strategies = require('./strategies');
+
+Object.defineProperty(exports, 'strategies', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_strategies).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-search/dist/matches.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _strategies = require('./strategies');
+
+var _strategies2 = _interopRequireDefault(_strategies);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var matches = function matches() {
+  var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+  var value = _ref.value;
+  var query = _ref.query;
+  var _ref$strategy = _ref.strategy;
+  var strategy = _ref$strategy === undefined ? _strategies2.default.infix : _ref$strategy;
+  var _ref$transform = _ref.transform;
+  var transform = _ref$transform === undefined ? function (v) {
+    return v.toLowerCase();
+  } : _ref$transform;
+
+  if (!query) {
+    return {};
+  }
+
+  var val = value && value.toString ? value.toString() : '';
+
+  return strategy(transform(query)).matches(transform(val));
+};
+
+exports.default = matches;
+  })();
+});
+
+require.register("reactabular-search/dist/multiple_columns.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _single_column = require('./single_column');
+
+var _single_column2 = _interopRequireDefault(_single_column);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var multipleColumns = function multipleColumns(_ref) {
+  var columns = _ref.columns;
+  var query = _ref.query;
+  var strategy = _ref.strategy;
+  var transform = _ref.transform;
+  return function (data) {
+    return query ? Object.keys(query).reduce(function (filteredData, searchColumn) {
+      return (0, _single_column2.default)({
+        columns: columns,
+        searchColumn: searchColumn,
+        query: query[searchColumn],
+        strategy: strategy,
+        transform: transform
+      })(filteredData);
+    }, data) : data;
+  };
+};
+
+exports.default = multipleColumns;
+  })();
+});
+
+require.register("reactabular-search/dist/single_column.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _column_matches = require('./_column_matches');
+
+var _column_matches2 = _interopRequireDefault(_column_matches);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var singleColumn = function singleColumn(_ref) {
+  var columns = _ref.columns;
+  var _ref$searchColumn = _ref.searchColumn;
+  var searchColumn = _ref$searchColumn === undefined ? 'all' : _ref$searchColumn;
+  var query = _ref.query;
+  var strategy = _ref.strategy;
+  var transform = _ref.transform;
+  return function (rows) {
+    if (!query) {
+      return rows;
+    }
+
+    var ret = columns;
+
+    if (searchColumn !== 'all') {
+      ret = columns.filter(function (col) {
+        return col && col.property === searchColumn;
+      });
+    }
+
+    return rows.filter(function (row) {
+      return ret.filter(function (column) {
+        return (0, _column_matches2.default)({
+          query: query, column: column, strategy: strategy, transform: transform, row: row
+        });
+      }).length > 0;
+    });
+  };
+};
+
+exports.default = singleColumn;
+  })();
+});
+
+require.register("reactabular-search/dist/strategies.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-search");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var infix = function infix(queryTerm) {
+  return {
+    evaluate: function evaluate() {
+      var searchText = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+
+      if (!searchText) {
+        return false;
+      }
+
+      return searchText.indexOf(queryTerm) !== -1;
+    },
+    matches: function matches() {
+      var searchText = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+
+      if (!searchText) {
+        return [];
+      }
+
+      var splitString = searchText.split(queryTerm);
+      var result = [];
+      var currentPosition = 0;
+
+      for (var x = 0; x < splitString.length; x++) {
+        result.push({
+          startIndex: currentPosition + splitString[x].length,
+          length: queryTerm.length
+        });
+
+        currentPosition += splitString[x].length + queryTerm.length;
+      }
+
+      result.pop();
+
+      return result;
+    }
+  };
+};
+
+var prefix = function prefix(queryTerm) {
+  return {
+    evaluate: function evaluate() {
+      var searchText = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+
+      if (!searchText) {
+        return false;
+      }
+
+      return searchText.indexOf(queryTerm) === 0;
+    },
+    matches: function matches() {
+      var searchText = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+
+      if (!searchText) {
+        return [];
+      }
+
+      var prefixIndex = searchText.indexOf(queryTerm);
+
+      if (prefixIndex === 0) {
+        return [{
+          startIndex: 0,
+          length: queryTerm.length
+        }];
+      }
+
+      return [];
+    }
+  };
+};
+
+exports.default = {
+  infix: infix,
+  prefix: prefix
+};
+  })();
+});
+
+require.register("reactabular-select/dist/Select.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-select");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Select = function (_React$Component) {
+  _inherits(Select, _React$Component);
+
+  function Select(props) {
+    _classCallCheck(this, Select);
+
+    var _this = _possibleConstructorReturn(this, (Select.__proto__ || Object.getPrototypeOf(Select)).call(this, props));
+
+    _this.onKeyPressed = _this.onKeyPressed.bind(_this);
+    return _this;
+  }
+
+  _createClass(Select, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      window.addEventListener('keydown', this.onKeyPressed);
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      window.removeEventListener('keydown', this.onKeyPressed);
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var children = this.props.children;
+
+
+      return _react2.default.createElement(
+        'div',
+        null,
+        children
+      );
+    }
+  }, {
+    key: 'onKeyPressed',
+    value: function onKeyPressed(e) {
+      var _props = this.props;
+      var rows = _props.rows;
+      var selectedRowIndex = _props.selectedRowIndex;
+      var onSelectRow = _props.onSelectRow;
+
+      // No selection yet, escape
+
+      if (selectedRowIndex < 0) {
+        return;
+      }
+
+      // Arrow Up
+      if (e.keyCode === 38 && selectedRowIndex > 0) {
+        e.preventDefault();
+
+        onSelectRow(selectedRowIndex - 1);
+      }
+
+      // Arrow Down
+      if (e.keyCode === 40 && selectedRowIndex < rows.length - 1) {
+        e.preventDefault();
+
+        onSelectRow(selectedRowIndex + 1);
+      }
+    }
+  }]);
+
+  return Select;
+}(_react2.default.Component);
+
+'development' !== "production" ? Select.propTypes = {
+  children: _react2.default.PropTypes.any.isRequired,
+  selectedRowIndex: _react2.default.PropTypes.any,
+  onSelectRow: _react2.default.PropTypes.func.isRequired,
+  // TODO: Same as for table but this is enough for now
+  // -> extract reactabular-types?
+  rows: _react2.default.PropTypes.any.isRequired
+} : void 0;
+Select.defaultProps = {
+  onSelectRow: function onSelectRow() {}
+};
+
+exports.default = Select;
+  })();
+});
+
+require.register("reactabular-select/dist/by-arrow-keys.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-select");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _Select = require('./Select');
+
+var _Select2 = _interopRequireDefault(_Select);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var byArrowKeys = function byArrowKeys(props) {
+  return function (children) {
+    return _react2.default.createElement(_Select2.default, props, children);
+  };
+};
+
+exports.default = byArrowKeys;
+  })();
+});
+
+require.register("reactabular-select/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-select");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _byArrowKeys = require('./by-arrow-keys');
+
+Object.defineProperty(exports, 'byArrowKeys', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_byArrowKeys).default;
+  }
+});
+
+var _row = require('./row');
+
+Object.defineProperty(exports, 'row', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_row).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-select/dist/row.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-select");
+  (function() {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+function selectRow(_ref) {
+  var rows = _ref.rows;
+  var _ref$isSelected = _ref.isSelected;
+  var isSelected = _ref$isSelected === undefined ? function (row, selectedRowId) {
+    return row.id === selectedRowId;
+  } : _ref$isSelected;
+  var selectedRowId = _ref.selectedRowId;
+
+  var selectedRow = void 0;
+
+  // Reset selected flags and select the given row
+  var newRows = rows.map(function (row) {
+    var selected = false;
+
+    if (isSelected(row, selectedRowId)) {
+      selected = true;
+
+      selectedRow = row;
+    }
+
+    return _extends({}, row, {
+      selected: selected
+    });
+  });
+
+  return {
+    rows: newRows,
+    selectedRow: selectedRow
+  };
+}
+
+exports.default = selectRow;
+  })();
+});
+
+require.register("reactabular-sort/dist/by_column.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _default_order = require('./default_order');
+
+var _default_order2 = _interopRequireDefault(_default_order);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var byColumn = function byColumn(_ref) {
+  var sortingColumns = _ref.sortingColumns;
+  var _ref$sortingOrder = _ref.sortingOrder;
+  var sortingOrder = _ref$sortingOrder === undefined ? _default_order2.default : _ref$sortingOrder;
+  var _ref$selectedColumn = _ref.selectedColumn;
+  var selectedColumn = _ref$selectedColumn === undefined ? -1 : _ref$selectedColumn;
+
+  var sort = sortingOrder.FIRST;
+
+  if (selectedColumn < 0) {
+    return sortingColumns;
+  }
+
+  if (sortingColumns && {}.hasOwnProperty.call(sortingColumns, selectedColumn)) {
+    sort = sortingOrder[sortingColumns[selectedColumn].direction];
+
+    if (!sort) {
+      return {};
+    }
+  }
+
+  return _defineProperty({}, selectedColumn, {
+    direction: sort,
+    position: 0
+  });
+};
+
+exports.default = byColumn;
+  })();
+});
+
+require.register("reactabular-sort/dist/by_columns.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _cloneDeep = require('lodash/cloneDeep');
+
+var _cloneDeep2 = _interopRequireDefault(_cloneDeep);
+
+var _default_order = require('./default_order');
+
+var _default_order2 = _interopRequireDefault(_default_order);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var byColumns = function byColumns(_ref) {
+  var sortingColumns = _ref.sortingColumns;
+  var _ref$sortingOrder = _ref.sortingOrder;
+  var sortingOrder = _ref$sortingOrder === undefined ? _default_order2.default : _ref$sortingOrder;
+  var _ref$selectedColumn = _ref.selectedColumn;
+  var selectedColumn = _ref$selectedColumn === undefined ? -1 : _ref$selectedColumn;
+
+  var newSortingColumns = {};
+
+  if (selectedColumn < 0) {
+    return sortingColumns;
+  }
+
+  if (!sortingColumns) {
+    return _defineProperty({}, selectedColumn, {
+      direction: sortingOrder.FIRST,
+      position: 0
+    });
+  } else if ({}.hasOwnProperty.call(sortingColumns, selectedColumn)) {
+    // Clone to avoid mutating the original structure
+    newSortingColumns = (0, _cloneDeep2.default)(sortingColumns);
+
+    var newSort = sortingOrder[newSortingColumns[selectedColumn].direction];
+
+    if (newSort) {
+      newSortingColumns[selectedColumn] = {
+        direction: newSort,
+        position: newSortingColumns[selectedColumn].position
+      };
+    } else {
+      (function () {
+        var oldPosition = newSortingColumns[selectedColumn].position;
+
+        delete newSortingColumns[selectedColumn];
+
+        // Update position of columns after the deleted one
+        Object.keys(newSortingColumns).forEach(function (k) {
+          var v = newSortingColumns[k];
+
+          if (v.position > oldPosition) {
+            v.position--;
+          }
+        });
+      })();
+    }
+
+    return newSortingColumns;
+  }
+
+  return _extends({}, sortingColumns, _defineProperty({}, selectedColumn, {
+    direction: sortingOrder.FIRST,
+    position: Object.keys(sortingColumns).length
+  }));
+};
+
+exports.default = byColumns;
+  })();
+});
+
+require.register("reactabular-sort/dist/by_columns_prioritize_last_sorted.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _cloneDeep = require('lodash/cloneDeep');
+
+var _cloneDeep2 = _interopRequireDefault(_cloneDeep);
+
+var _default_order = require('./default_order');
+
+var _default_order2 = _interopRequireDefault(_default_order);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var byColumnsPrioritizeLastSorted = function byColumnsPrioritizeLastSorted(_ref) {
+  var sortingColumns = _ref.sortingColumns;
+  var _ref$sortingOrder = _ref.sortingOrder;
+  var sortingOrder = _ref$sortingOrder === undefined ? _default_order2.default : _ref$sortingOrder;
+  var _ref$selectedColumn = _ref.selectedColumn;
+  var selectedColumn = _ref$selectedColumn === undefined ? -1 : _ref$selectedColumn;
+
+  var newSortingColumns = {};
+
+  if (selectedColumn < 0) {
+    return sortingColumns;
+  }
+
+  if (!sortingColumns) {
+    return _defineProperty({}, selectedColumn, {
+      direction: sortingOrder.FIRST,
+      position: 0
+    });
+  } else if ({}.hasOwnProperty.call(sortingColumns, selectedColumn)) {
+    var _ret = function () {
+      // Clone to avoid mutating the original structure
+      newSortingColumns = (0, _cloneDeep2.default)(sortingColumns);
+
+      var newSort = sortingOrder[newSortingColumns[selectedColumn].direction];
+      var oldPosition = newSortingColumns[selectedColumn].position;
+
+      if (newSort) {
+        // sort direction is being updated
+        // demote all previously higher-priority columns by 1
+        // by incrementing their position
+        Object.keys(newSortingColumns).forEach(function (k) {
+          var v = newSortingColumns[k];
+
+          if (v.position < oldPosition) {
+            v.position++;
+          }
+        });
+        newSortingColumns[selectedColumn] = {
+          direction: newSort,
+          position: 0
+        };
+      } else {
+        delete newSortingColumns[selectedColumn];
+
+        // Update position of columns after the deleted one
+        Object.keys(newSortingColumns).forEach(function (k) {
+          var v = newSortingColumns[k];
+
+          if (v.position > oldPosition) {
+            v.position--;
+          }
+        });
+      }
+
+      return {
+        v: newSortingColumns
+      };
+    }();
+
+    if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+  }
+
+  // clone and insert new column at position 0, increment all others
+  newSortingColumns = (0, _cloneDeep2.default)(sortingColumns);
+  Object.keys(newSortingColumns).forEach(function (k) {
+    var v = newSortingColumns[k];
+    v.position++;
+  });
+
+  return _extends({}, newSortingColumns, _defineProperty({}, selectedColumn, {
+    direction: sortingOrder.FIRST,
+    position: 0
+  }));
+};
+
+exports.default = byColumnsPrioritizeLastSorted;
+  })();
+});
+
+require.register("reactabular-sort/dist/default_order.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var defaultOrder = {
+  FIRST: 'asc',
+  '': 'asc',
+  asc: 'desc',
+  desc: ''
+};
+
+exports.default = defaultOrder;
+  })();
+});
+
+require.register("reactabular-sort/dist/header.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _strategies = require('./strategies');
+
+var _strategies2 = _interopRequireDefault(_strategies);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var defaultStyles = {
+  container: {},
+  value: {},
+  order: {}
+};
+
+var header = function header(_ref) {
+  var sortable = _ref.sortable;
+  var getSortingColumns = _ref.getSortingColumns;
+  var _ref$styles = _ref.styles;
+  var styles = _ref$styles === undefined ? {} : _ref$styles;
+  var _ref$strategy = _ref.strategy;
+  var strategy = _ref$strategy === undefined ? _strategies2.default.byIndex : _ref$strategy;
+
+  if (!sortable) {
+    throw new Error('header - Missing sortable!');
+  }
+  if (!getSortingColumns) {
+    throw new Error('header - Missing getSortingColumns!');
+  }
+
+  var headerStyles = _extends({}, defaultStyles, styles);
+
+  return function (value, extra) {
+    var sortingColumns = getSortingColumns();
+    var sortingColumn = sortingColumns && sortingColumns[extra[strategy.fieldName]] || {};
+    var sortingPosition = sortingColumn.position;
+
+    return _react2.default.createElement(
+      'div',
+      { className: 'sort-container', style: headerStyles.container },
+      _react2.default.createElement(
+        'span',
+        {
+          className: 'sort-value',
+          style: headerStyles.value
+        },
+        value
+      ),
+      {}.hasOwnProperty.call(sortingColumn, 'position') ? _react2.default.createElement(
+        'span',
+        {
+          className: 'sort-order',
+          style: headerStyles.order
+        },
+        sortingPosition + 1
+      ) : null,
+      _react2.default.createElement('span', sortable(value, extra))
+    );
+  };
+};
+
+exports.default = header;
+  })();
+});
+
+require.register("reactabular-sort/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _by_column = require('./by_column');
+
+Object.defineProperty(exports, 'byColumn', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_by_column).default;
+  }
+});
+
+var _by_columns = require('./by_columns');
+
+Object.defineProperty(exports, 'byColumns', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_by_columns).default;
+  }
+});
+
+var _by_columns_prioritize_last_sorted = require('./by_columns_prioritize_last_sorted');
+
+Object.defineProperty(exports, 'byColumnsPrioritizeLastSorted', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_by_columns_prioritize_last_sorted).default;
+  }
+});
+
+var _header = require('./header');
+
+Object.defineProperty(exports, 'header', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_header).default;
+  }
+});
+
+var _sorter = require('./sorter');
+
+Object.defineProperty(exports, 'sorter', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_sorter).default;
+  }
+});
+
+var _reset = require('./reset');
+
+Object.defineProperty(exports, 'reset', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_reset).default;
+  }
+});
+
+var _sort = require('./sort');
+
+Object.defineProperty(exports, 'sort', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_sort).default;
+  }
+});
+
+var _strategies = require('./strategies');
+
+Object.defineProperty(exports, 'strategies', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_strategies).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-sort/dist/reset.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _strategies = require('./strategies');
+
+var _strategies2 = _interopRequireDefault(_strategies);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var reset = function reset(_ref) {
+  var _ref$event = _ref.event;
+  var event = _ref$event === undefined ? 'onDoubleClick' : _ref$event;
+  var _ref$getSortingColumn = _ref.getSortingColumns;
+  var getSortingColumns = _ref$getSortingColumn === undefined ? function () {
+    return [];
+  } : _ref$getSortingColumn;
+  var _ref$onReset = _ref.onReset;
+  var onReset = _ref$onReset === undefined ? function () {} : _ref$onReset;
+  var _ref$strategy = _ref.strategy;
+  var strategy = _ref$strategy === undefined ? _strategies2.default.byIndex : _ref$strategy;
+  return function (value, extra) {
+    return _defineProperty({}, event, function () {
+      var sortingColumns = getSortingColumns();
+
+      if (!sortingColumns || !Object.keys(sortingColumns).length) {
+        return;
+      }
+
+      var field = extra[strategy.fieldName];
+
+      var position = sortingColumns[field].position;
+      var newSortingColumns = {};
+
+      delete sortingColumns[field];
+
+      Object.keys(sortingColumns).forEach(function (k) {
+        var column = sortingColumns[k];
+
+        if (column.position > position) {
+          newSortingColumns[k] = _extends({}, column, {
+            position: column.position - 1
+          });
+        } else {
+          newSortingColumns[k] = column;
+        }
+      });
+
+      onReset({
+        sortingColumns: newSortingColumns
+      });
+    });
+  };
+};
+
+exports.default = reset;
+  })();
+});
+
+require.register("reactabular-sort/dist/sort.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _reactabularUtils = require('reactabular-utils');
+
+var _strategies = require('./strategies');
+
+var _strategies2 = _interopRequireDefault(_strategies);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+var sort = function sort() {
+  var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+  var _ref$event = _ref.event;
+  var event = _ref$event === undefined ? 'onClick' : _ref$event;
+  var _ref$getSortingColumn = _ref.getSortingColumns;
+  var getSortingColumns = _ref$getSortingColumn === undefined ? function () {
+    return [];
+  } : _ref$getSortingColumn;
+  var _ref$onSort = _ref.onSort;
+  var onSort = _ref$onSort === undefined ? function () {} : _ref$onSort;
+  var _ref$strategy = _ref.strategy;
+  var strategy = _ref$strategy === undefined ? _strategies2.default.byIndex : _ref$strategy;
+  return function (_value, extra) {
+    var _ref2 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+    var className = _ref2.className;
+
+    var props = _objectWithoutProperties(_ref2, ['className']);
+
+    var sortingColumns = getSortingColumns();
+    var field = extra[strategy.fieldName];
+    var headerClass = 'sort sort-none';
+
+    // Check against undefined to allow zero
+    if (sortingColumns[field] !== undefined) {
+      headerClass = 'sort sort-' + sortingColumns[field].direction;
+    }
+
+    return _extends({}, props, _defineProperty({
+      className: (0, _reactabularUtils.mergeClassNames)(className, headerClass)
+    }, event, function () {
+      return onSort(field);
+    }));
+  };
+};
+
+exports.default = sort;
+  })();
+});
+
+require.register("reactabular-sort/dist/sorter.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _strategies = require('./strategies');
+
+var _strategies2 = _interopRequireDefault(_strategies);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// sorter === lodash orderBy
+// https://lodash.com/docs#orderBy
+var sorter = function sorter() {
+  var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+  var columns = _ref.columns;
+  var sortingColumns = _ref.sortingColumns;
+  var sort = _ref.sort;
+  var _ref$strategy = _ref.strategy;
+  var strategy = _ref$strategy === undefined ? _strategies2.default.byIndex : _ref$strategy;
+  return function (data) {
+    if (!columns) {
+      throw new Error('sort.sorter - Missing columns!');
+    }
+
+    if (!sortingColumns) {
+      return data;
+    }
+
+    var columnIndexList = new Array(sortingColumns.length);
+    var orderList = new Array(sortingColumns.length);
+
+    Object.keys(sortingColumns).forEach(function (sortingColumnKey) {
+      var realColumn = strategy.getColumn(columns, sortingColumnKey) || {};
+      var sortingColumn = sortingColumns[sortingColumnKey];
+
+      columnIndexList[sortingColumn.position] = function (row) {
+        var property = realColumn.property;
+        var value = row[property];
+        // Pick resolved value by convention
+        var resolvedValue = row['_' + property] || value;
+
+        if (resolvedValue && resolvedValue.toLowerCase) {
+          return resolvedValue.toLowerCase();
+        }
+
+        if (value && value.toLowerCase) {
+          return value.toLowerCase();
+        }
+
+        return value;
+      };
+
+      orderList[sortingColumn.position] = sortingColumn.direction;
+    });
+
+    return sort(data, columnIndexList, orderList);
+  };
+};
+
+exports.default = sorter;
+  })();
+});
+
+require.register("reactabular-sort/dist/strategies.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sort");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _find = require('lodash/find');
+
+var _find2 = _interopRequireDefault(_find);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var byIndex = {
+  fieldName: 'columnIndex',
+  getColumn: function getColumn(columns, sortingColumnKey) {
+    return columns[sortingColumnKey];
+  }
+};
+
+var byProperty = {
+  fieldName: 'property',
+  getColumn: function getColumn(columns, property) {
+    return (0, _find2.default)(columns, { property: property });
+  }
+};
+
+exports.default = {
+  byIndex: byIndex,
+  byProperty: byProperty
+};
+  })();
+});
+
+require.register("reactabular-sticky/dist/body.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sticky");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactabularTable = require('reactabular-table');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } /* eslint-disable react/prefer-stateless-function */
+
+
+var Body = function (_React$Component) {
+  _inherits(Body, _React$Component);
+
+  function Body(props) {
+    _classCallCheck(this, Body);
+
+    var _this = _possibleConstructorReturn(this, (Body.__proto__ || Object.getPrototypeOf(Body)).call(this, props));
+
+    _this.ref = null;
+    return _this;
+  }
+
+  _createClass(Body, [{
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      var _props = this.props;
+      var style = _props.style;
+      var tableHeader = _props.tableHeader;
+      var _onScroll = _props.onScroll;
+
+      var props = _objectWithoutProperties(_props, ['style', 'tableHeader', 'onScroll']);
+
+      var tableHeaderWidth = tableHeader ? tableHeader.clientWidth : 0;
+      var tableBodyWidth = this.ref ? this.ref.clientWidth : 0;
+      var scrollOffset = tableHeaderWidth - tableBodyWidth || 0;
+
+      return _react2.default.createElement(_reactabularTable.Body, _extends({
+        ref: function ref(body) {
+          _this2.ref = body && body.getRef();
+        },
+        style: _extends({}, style || {}, {
+          display: 'block',
+          overflow: 'auto',
+          paddingRight: scrollOffset
+        }),
+        // Expand onScroll as otherwise the logic won't work
+        onScroll: function onScroll(e) {
+          _onScroll && _onScroll(e);
+
+          var scrollLeft = e.target.scrollLeft;
+
+
+          if (tableHeader) {
+            tableHeader.scrollLeft = scrollLeft;
+          }
+        }
+      }, props));
+    }
+  }, {
+    key: 'getRef',
+    value: function getRef() {
+      return this.ref;
+    }
+  }]);
+
+  return Body;
+}(_react2.default.Component);
+
+'development' !== "production" ? Body.propTypes = {
+  style: _react2.default.PropTypes.any,
+  tableHeader: _react2.default.PropTypes.any,
+  onScroll: _react2.default.PropTypes.func
+} : void 0;
+
+exports.default = Body;
+  })();
+});
+
+require.register("reactabular-sticky/dist/header.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sticky");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactabularTable = require('reactabular-table');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } /* eslint-disable react/prefer-stateless-function */
+
+
+var Header = function (_React$Component) {
+  _inherits(Header, _React$Component);
+
+  function Header(props) {
+    _classCallCheck(this, Header);
+
+    var _this = _possibleConstructorReturn(this, (Header.__proto__ || Object.getPrototypeOf(Header)).call(this, props));
+
+    _this.ref = null;
+    return _this;
+  }
+
+  _createClass(Header, [{
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      var _props = this.props;
+      var style = _props.style;
+      var tableBody = _props.tableBody;
+
+      var props = _objectWithoutProperties(_props, ['style', 'tableBody']);
+
+      return _react2.default.createElement(_reactabularTable.Header, _extends({
+        ref: function ref(header) {
+          _this2.ref = header && header.getRef();
+        },
+        style: _extends({}, style || {}, {
+          display: 'block',
+          overflow: 'auto'
+        })
+      }, props, {
+        // Override onScroll as otherwise the logic won't work
+        onScroll: function onScroll(_ref) {
+          var scrollLeft = _ref.target.scrollLeft;
+
+          if (tableBody) {
+            tableBody.scrollLeft = scrollLeft;
+          }
+        }
+      }));
+    }
+  }, {
+    key: 'getRef',
+    value: function getRef() {
+      return this.ref;
+    }
+  }]);
+
+  return Header;
+}(_react2.default.Component);
+
+'development' !== "production" ? Header.propTypes = {
+  style: _react2.default.PropTypes.any,
+  tableBody: _react2.default.PropTypes.any
+} : void 0;
+
+exports.default = Header;
+  })();
+});
+
+require.register("reactabular-sticky/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-sticky");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Header = exports.Body = undefined;
+
+var _body = require('./body');
+
+var _body2 = _interopRequireDefault(_body);
+
+var _header = require('./header');
+
+var _header2 = _interopRequireDefault(_header);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.Body = _body2.default;
+exports.Header = _header2.default;
+  })();
+});
+
+require.register("reactabular-table/dist/body-row.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _isEqual = require('lodash/isEqual');
+
+var _isEqual2 = _interopRequireDefault(_isEqual);
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactabularUtils = require('reactabular-utils');
+
+var _types = require('./types');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var BodyRow = function (_React$Component) {
+  _inherits(BodyRow, _React$Component);
+
+  function BodyRow() {
+    _classCallCheck(this, BodyRow);
+
+    return _possibleConstructorReturn(this, (BodyRow.__proto__ || Object.getPrototypeOf(BodyRow)).apply(this, arguments));
+  }
+
+  _createClass(BodyRow, [{
+    key: 'shouldComponentUpdate',
+    value: function shouldComponentUpdate(nextProps) {
+      // eslint-disable-line no-unused-vars
+      var previousProps = this.props;
+
+      // Check for row based override.
+      var components = nextProps.components;
+
+
+      if (components && components.row && components.row.shouldComponentUpdate) {
+        return true;
+      }
+
+      return !((0, _isEqual2.default)(previousProps.columns, nextProps.columns) && (0, _isEqual2.default)(previousProps.rowData, nextProps.rowData));
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _props = this.props;
+      var columns = _props.columns;
+      var components = _props.components;
+      var onRow = _props.onRow;
+      var rowKey = _props.rowKey;
+      var rowIndex = _props.rowIndex;
+      var rowData = _props.rowData;
+
+
+      return _react2.default.createElement(components.row, onRow(rowData, { rowIndex: rowIndex, rowKey: rowKey }), columns.map(function (_ref, j) {
+        var column = _ref.column;
+        var cell = _ref.cell;
+        var property = _ref.property;
+        var props = _ref.props;
+
+        var _ref2 = cell || {};
+
+        var _ref2$transforms = _ref2.transforms;
+        var transforms = _ref2$transforms === undefined ? [] : _ref2$transforms;
+        var _ref2$format = _ref2.format;
+        var format = _ref2$format === undefined ? function (a) {
+          return a;
+        } : _ref2$format; // TODO: test against this case
+
+        var extraParameters = {
+          columnIndex: j,
+          column: column,
+          rowData: rowData,
+          rowIndex: rowIndex,
+          rowKey: rowKey,
+          property: property
+        };
+        var transformed = (0, _reactabularUtils.evaluateTransforms)(transforms, rowData[property], extraParameters);
+
+        if (!transformed) {
+          console.warn('Table.Body - Failed to receive a transformed result'); // eslint-disable-line max-len, no-console
+        }
+
+        return _react2.default.createElement(components.cell, _extends({
+          key: j + '-cell'
+        }, (0, _reactabularUtils.mergePropPair)(props, transformed)), transformed.children || format(rowData['_' + property] || rowData[property], extraParameters));
+      }));
+    }
+  }]);
+
+  return BodyRow;
+}(_react2.default.Component);
+
+BodyRow.defaultProps = _types.tableBodyRowDefaults;
+'development' !== "production" ? BodyRow.propTypes = _types.tableBodyRowTypes : void 0;
+
+exports.default = BodyRow;
+  })();
+});
+
+require.register("reactabular-table/dist/body.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _isEqual = require('lodash/isEqual');
+
+var _isEqual2 = _interopRequireDefault(_isEqual);
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactabularUtils = require('reactabular-utils');
+
+var _types = require('./types');
+
+var _bodyRow = require('./body-row');
+
+var _bodyRow2 = _interopRequireDefault(_bodyRow);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Body = function (_React$Component) {
+  _inherits(Body, _React$Component);
+
+  function Body(props) {
+    _classCallCheck(this, Body);
+
+    var _this = _possibleConstructorReturn(this, (Body.__proto__ || Object.getPrototypeOf(Body)).call(this, props));
+
+    _this.ref = null;
+    return _this;
+  }
+
+  _createClass(Body, [{
+    key: 'shouldComponentUpdate',
+    value: function shouldComponentUpdate(nextProps, nextState, nextContext) {
+      // eslint-disable-line no-unused-vars
+      // Skip checking props against `onRow` since that can be bound at render().
+      // That's not particularly good practice but you never know how the users
+      // prefer to define the handler.
+
+      return !((0, _isEqual2.default)(omitOnRow(this.props), omitOnRow(nextProps)) && (0, _isEqual2.default)(this.context, nextContext));
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      var _props = this.props;
+      var onRow = _props.onRow;
+      var rows = _props.rows;
+      var rowKey = _props.rowKey;
+
+      var props = _objectWithoutProperties(_props, ['onRow', 'rows', 'rowKey']);
+
+      var _context = this.context;
+      var bodyColumns = _context.bodyColumns;
+      var components = _context.components;
+
+
+      props.ref = function (body) {
+        _this2.ref = body;
+      };
+
+      return _react2.default.createElement(components.body.wrapper, props, rows.map(function (rowData, index) {
+        var rowIndex = rowData._index || index;
+        var key = (0, _reactabularUtils.resolveRowKey)({ rowData: rowData, rowIndex: rowIndex, rowKey: rowKey });
+
+        return _react2.default.createElement(_bodyRow2.default, {
+          key: key,
+          components: components.body,
+          onRow: onRow,
+          rowKey: key,
+          rowIndex: rowIndex,
+          rowData: rowData,
+          columns: bodyColumns
+        });
+      }));
+    }
+  }, {
+    key: 'getRef',
+    value: function getRef() {
+      return this.ref;
+    }
+  }]);
+
+  return Body;
+}(_react2.default.Component);
+
+'development' !== "production" ? Body.propTypes = _types.tableBodyTypes : void 0;
+Body.defaultProps = _types.tableBodyDefaults;
+Body.contextTypes = _types.tableBodyContextTypes;
+
+function omitOnRow(props) {
+  var onRow = props.onRow;
+
+  var ret = _objectWithoutProperties(props, ['onRow']); // eslint-disable-line no-unused-vars
+
+  return ret;
+}
+
+exports.default = Body;
+  })();
+});
+
+require.register("reactabular-table/dist/header-row.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactabularUtils = require('reactabular-utils');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var HeaderRow = function HeaderRow(_ref) {
+  var row = _ref.row;
+  var components = _ref.components;
+  return _react2.default.createElement(components.row, {}, row.map(function (_ref2, j) {
+    var column = _ref2.column;
+    var _ref2$header = _ref2.header;
+    var header = _ref2$header === undefined ? {} : _ref2$header;
+    var _ref2$props = _ref2.props;
+    var props = _ref2$props === undefined ? {} : _ref2$props;
+    var label = header.label;
+    var _header$transforms = header.transforms;
+    var transforms = _header$transforms === undefined ? [] : _header$transforms;
+    var _header$format = header.format;
+    var format = _header$format === undefined ? function (a) {
+      return a;
+    } : _header$format;
+
+    var extraParameters = {
+      columnIndex: j,
+      column: column,
+      property: column && column.property // TODO: test that this is passed properly
+    };
+    var transformedProps = (0, _reactabularUtils.evaluateTransforms)(transforms, label, extraParameters);
+
+    if (!transformedProps) {
+      console.warn('Table.Header - Failed to receive a transformed result'); // eslint-disable-line max-len, no-console
+    }
+
+    return _react2.default.createElement(components.cell, _extends({
+      key: j + '-header'
+    }, (0, _reactabularUtils.mergePropPair)(props, transformedProps)), transformedProps.children || format(label, extraParameters));
+  }));
+};
+'development' !== "production" ? HeaderRow.propTypes = {
+  row: _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.object),
+  components: _react2.default.PropTypes.object
+} : void 0;
+
+exports.default = HeaderRow;
+  })();
+});
+
+require.register("reactabular-table/dist/header.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _types = require('./types');
+
+var _headerRow = require('./header-row');
+
+var _headerRow2 = _interopRequireDefault(_headerRow);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Header = function (_React$Component) {
+  _inherits(Header, _React$Component);
+
+  // eslint-disable-line max-len, react/prefer-stateless-function
+  function Header(props) {
+    _classCallCheck(this, Header);
+
+    var _this = _possibleConstructorReturn(this, (Header.__proto__ || Object.getPrototypeOf(Header)).call(this, props));
+
+    _this.ref = null;
+    return _this;
+  }
+
+  _createClass(Header, [{
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      var _props = this.props;
+      var children = _props.children;
+
+      var props = _objectWithoutProperties(_props, ['children']);
+
+      var _context = this.context;
+      var headerRows = _context.headerRows;
+      var components = _context.components;
+
+
+      props.ref = function (header) {
+        _this2.ref = header;
+      };
+
+      return _react2.default.createElement(components.header.wrapper, props, [headerRows.map(function (row, i) {
+        return _react2.default.createElement(_headerRow2.default, {
+          key: i + '-header-row',
+          components: components.header,
+          row: row
+        });
+      })].concat(children));
+    }
+  }, {
+    key: 'getRef',
+    value: function getRef() {
+      return this.ref;
+    }
+  }]);
+
+  return Header;
+}(_react2.default.Component);
+
+'development' !== "production" ? Header.propTypes = {
+  children: _react2.default.PropTypes.any
+} : void 0;
+Header.contextTypes = _types.tableHeaderContextTypes;
+
+exports.default = Header;
+  })();
+});
+
+require.register("reactabular-table/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _provider = require('./provider');
+
+Object.defineProperty(exports, 'Provider', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_provider).default;
+  }
+});
+
+var _header = require('./header');
+
+Object.defineProperty(exports, 'Header', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_header).default;
+  }
+});
+
+var _body = require('./body');
+
+Object.defineProperty(exports, 'Body', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_body).default;
+  }
+});
+
+var _bodyRow = require('./body-row');
+
+Object.defineProperty(exports, 'BodyRow', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_bodyRow).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-table/dist/provider.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactabularUtils = require('reactabular-utils');
+
+var _types = require('./types');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var componentDefaults = _types.tableDefaults.components;
+
+// TODO: shouldComponentUpdate
+
+var Provider = function (_React$Component) {
+  _inherits(Provider, _React$Component);
+
+  function Provider() {
+    _classCallCheck(this, Provider);
+
+    return _possibleConstructorReturn(this, (Provider.__proto__ || Object.getPrototypeOf(Provider)).apply(this, arguments));
+  }
+
+  _createClass(Provider, [{
+    key: 'getChildContext',
+    value: function getChildContext() {
+      var _props = this.props;
+      var columns = _props.columns;
+      var components = _props.components;
+
+      // Merge column props with header/body specific ones so that can be avoided later
+
+      var headerRows = (0, _reactabularUtils.resolveHeaderRows)(columns).map(function (row) {
+        return row.map(function (column) {
+          return column.header ? {
+            props: (0, _reactabularUtils.mergePropPair)(column.props, column.header.props),
+            header: column.header,
+            children: column.children || [], // TODO: test for this case
+            column: column
+          } : {};
+        });
+      });
+
+      var bodyColumns = (0, _reactabularUtils.resolveBodyColumns)(columns).map(function (column) {
+        return {
+          props: (0, _reactabularUtils.mergePropPair)(column.props, column.cell && column.cell.props),
+          cell: column.cell || {},
+          children: column.children || [], // TODO: test for this case
+          property: column.property,
+          column: column
+        };
+      });
+
+      return {
+        headerRows: headerRows,
+        bodyColumns: bodyColumns,
+        components: {
+          table: components.table || componentDefaults.table,
+          header: _extends({}, componentDefaults.header, components.header),
+          body: _extends({}, componentDefaults.body, components.body)
+        }
+      };
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _props2 = this.props;
+      var columns = _props2.columns;
+      var components = _props2.components;
+      var children = _props2.children;
+
+      var props = _objectWithoutProperties(_props2, ['columns', 'components', 'children']);
+
+      return _react2.default.createElement(components.table || _types.tableDefaults.components.table, props, children);
+    }
+  }]);
+
+  return Provider;
+}(_react2.default.Component);
+
+exports.default = Provider;
+
+'development' !== "production" ? Provider.propTypes = _extends({}, _types.tableTypes, {
+  children: _react2.default.PropTypes.any
+}) : void 0;
+Provider.defaultProps = _extends({}, _types.tableDefaults);
+Provider.childContextTypes = _types.tableContextTypes;
+  })();
+});
+
+require.register("reactabular-table/dist/types.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-table");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.tableDefaults = exports.tableHeaderContextTypes = exports.tableBodyRowDefaults = exports.tableBodyRowTypes = exports.tableBodyContextTypes = exports.tableBodyDefaults = exports.tableBodyTypes = exports.tableContextTypes = exports.tableTypes = undefined;
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var arrayOfObjectColumns = _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.shape({
+  header: _react2.default.PropTypes.shape({
+    label: _react2.default.PropTypes.string,
+    transforms: _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.func),
+    format: _react2.default.PropTypes.func,
+    props: _react2.default.PropTypes.object
+  }),
+  cell: _react2.default.PropTypes.shape({
+    property: _react2.default.PropTypes.oneOfType([_react2.default.PropTypes.number, _react2.default.PropTypes.string]),
+    transforms: _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.func),
+    format: _react2.default.PropTypes.func,
+    props: _react2.default.PropTypes.object
+  })
+}));
+var arrayOfArrayColumns = _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.array);
+var rowsType = _react2.default.PropTypes.oneOfType([arrayOfObjectColumns, arrayOfArrayColumns]);
+var rowKeyType = _react2.default.PropTypes.oneOfType([_react2.default.PropTypes.func, _react2.default.PropTypes.string]);
+var rowDataType = _react2.default.PropTypes.oneOfType([_react2.default.PropTypes.array, _react2.default.PropTypes.object]);
+var tableTypes = {
+  columns: _react2.default.PropTypes.array.isRequired,
+  components: _react2.default.PropTypes.object
+};
+var tableContextTypes = {
+  headerRows: _react2.default.PropTypes.array.isRequired,
+  bodyColumns: _react2.default.PropTypes.array.isRequired,
+  components: _react2.default.PropTypes.object
+};
+var tableBodyDefaults = {
+  onRow: function onRow() {}
+};
+var tableBodyTypes = {
+  onRow: _react2.default.PropTypes.func,
+  rows: rowsType.isRequired,
+  rowKey: rowKeyType
+};
+var tableBodyContextTypes = {
+  bodyColumns: _react2.default.PropTypes.array.isRequired,
+  components: _react2.default.PropTypes.object
+};
+var tableBodyRowDefaults = {
+  onRow: function onRow() {
+    return {};
+  }
+};
+var tableBodyRowTypes = {
+  columns: _react2.default.PropTypes.array.isRequired,
+  components: _react2.default.PropTypes.object,
+  onRow: _react2.default.PropTypes.func,
+  rowIndex: _react2.default.PropTypes.number.isRequired,
+  rowData: rowDataType.isRequired,
+  rowKey: _react2.default.PropTypes.string.isRequired
+};
+var tableHeaderContextTypes = {
+  headerRows: _react2.default.PropTypes.array.isRequired,
+  components: _react2.default.PropTypes.object
+};
+var tableDefaults = {
+  components: {
+    table: 'table',
+    header: {
+      wrapper: 'thead',
+      row: 'tr',
+      cell: 'th'
+    },
+    body: {
+      wrapper: 'tbody',
+      row: 'tr',
+      cell: 'td'
+    }
+  }
+};
+
+exports.tableTypes = tableTypes;
+exports.tableContextTypes = tableContextTypes;
+exports.tableBodyTypes = tableBodyTypes;
+exports.tableBodyDefaults = tableBodyDefaults;
+exports.tableBodyContextTypes = tableBodyContextTypes;
+exports.tableBodyRowTypes = tableBodyRowTypes;
+exports.tableBodyRowDefaults = tableBodyRowDefaults;
+exports.tableHeaderContextTypes = tableHeaderContextTypes;
+exports.tableDefaults = tableDefaults;
+  })();
+});
+
+require.register("reactabular-utils/dist/count-row-span.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+function countRowSpan(columns) {
+  var maximumCount = 0;
+
+  columns.forEach(function (column) {
+    if (column.children && column.children.length) {
+      maximumCount = Math.max(maximumCount, countRowSpan(column.children));
+    }
+  });
+
+  return maximumCount + 1;
+}
+
+exports.default = countRowSpan;
+  })();
+});
+
+require.register("reactabular-utils/dist/evaluate-transforms.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _mergePropPair = require('./merge-prop-pair');
+
+var _mergePropPair2 = _interopRequireDefault(_mergePropPair);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function evaluateTransforms() {
+  var transforms = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+  var value = arguments[1];
+  var extraParameters = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+  return transforms.map(function (transform) {
+    return transform(value, extraParameters);
+  }).filter(function (p) {
+    return p;
+  }).reduce(_mergePropPair2.default, {}) || {};
+}
+
+exports.default = evaluateTransforms;
+  })();
+});
+
+require.register("reactabular-utils/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _resolveHeaderRows = require('./resolve-header-rows');
+
+Object.defineProperty(exports, 'resolveHeaderRows', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_resolveHeaderRows).default;
+  }
+});
+
+var _countRowSpan = require('./count-row-span');
+
+Object.defineProperty(exports, 'countRowSpan', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_countRowSpan).default;
+  }
+});
+
+var _resolveBodyColumns = require('./resolve-body-columns');
+
+Object.defineProperty(exports, 'resolveBodyColumns', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_resolveBodyColumns).default;
+  }
+});
+
+var _resolveRowKey = require('./resolve-row-key');
+
+Object.defineProperty(exports, 'resolveRowKey', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_resolveRowKey).default;
+  }
+});
+
+var _evaluateTransforms = require('./evaluate-transforms');
+
+Object.defineProperty(exports, 'evaluateTransforms', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_evaluateTransforms).default;
+  }
+});
+
+var _mergePropPair = require('./merge-prop-pair');
+
+Object.defineProperty(exports, 'mergePropPair', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_mergePropPair).default;
+  }
+});
+
+var _mergeClassNames = require('./merge-class-names');
+
+Object.defineProperty(exports, 'mergeClassNames', {
+  enumerable: true,
+  get: function get() {
+    return _interopRequireDefault(_mergeClassNames).default;
+  }
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  })();
+});
+
+require.register("reactabular-utils/dist/merge-class-names.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+function mergeClassNames(a, b) {
+  if (a && b) {
+    return a + ' ' + b;
+  }
+
+  // Either a or b at this point
+  return (a || '') + (b || '');
+}
+
+exports.default = mergeClassNames;
+  })();
+});
+
+require.register("reactabular-utils/dist/merge-prop-pair.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _mergeClassNames = require('./merge-class-names');
+
+var _mergeClassNames2 = _interopRequireDefault(_mergeClassNames);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function mergePropPair() {
+  var a = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var b = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+  var ret = _extends({}, a, b, {
+    style: _extends({}, a.style, b.style),
+    className: (0, _mergeClassNames2.default)(a.className, b.className)
+  });
+
+  if (a.children || b.children) {
+    ret.children = _extends({}, b.children, a.children); // Reverse order
+  }
+
+  return ret;
+}
+
+exports.default = mergePropPair;
+  })();
+});
+
+require.register("reactabular-utils/dist/resolve-body-columns.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+function resolveBodyColumns(columns) {
+  var ret = [];
+
+  columns.forEach(function (column) {
+    // If a column has children, skip cell specific configuration
+    if (column.children && column.children.length) {
+      ret = ret.concat(resolveBodyColumns(column.children));
+    } else {
+      ret.push(column);
+    }
+  });
+
+  return ret;
+}
+
+exports.default = resolveBodyColumns;
+  })();
+});
+
+require.register("reactabular-utils/dist/resolve-header-rows.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _countRowSpan = require('./count-row-span');
+
+var _countRowSpan2 = _interopRequireDefault(_countRowSpan);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+function resolveHeaderRows() {
+  var columns = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+
+  var resolvedChildren = [];
+
+  var ret = columns.map(function (column) {
+    var children = column.children;
+
+    var col = _objectWithoutProperties(column, ['children']);
+
+    if (children && children.length) {
+      resolvedChildren = resolvedChildren.concat(resolveHeaderRows(children)[0]);
+
+      return _extends({}, col, {
+        props: _extends({}, col.props, {
+          colSpan: children.length
+        })
+      });
+    }
+
+    return _extends({}, col, {
+      props: _extends({}, col.props, {
+        rowSpan: (0, _countRowSpan2.default)(columns)
+      })
+    });
+  });
+
+  if (resolvedChildren.length) {
+    return [ret].concat([resolvedChildren]);
+  }
+
+  return [ret];
+}
+
+exports.default = resolveHeaderRows;
+  })();
+});
+
+require.register("reactabular-utils/dist/resolve-row-key.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular-utils");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+function resolveRowKey(_ref) {
+  var rowData = _ref.rowData;
+  var rowIndex = _ref.rowIndex;
+  var rowKey = _ref.rowKey;
+
+  if (typeof rowKey === 'function') {
+    return rowKey({ rowData: rowData, rowIndex: rowIndex }) + '-row';
+  } else if ('development' !== 'production') {
+    // Arrays cannot have rowKeys by definition so we have to go by index there.
+    if (!Array.isArray(rowData) && !{}.hasOwnProperty.call(rowData, rowKey)) {
+      console.warn( // eslint-disable-line no-console
+      'Table.Body - Missing valid rowKey!', rowData, rowKey);
+    }
+  }
+
+  return (rowData[rowKey] || rowIndex) + '-row';
+}
+
+exports.default = resolveRowKey;
+  })();
+});
+
+require.register("reactabular/dist/index.js", function(exports, require, module) {
+  require = __makeRelativeRequire(require, {}, "reactabular");
+  (function() {
+    'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.resizableColumn = exports.resolve = exports.highlight = exports.sort = exports.select = exports.search = exports.Search = exports.SearchColumns = exports.Sticky = exports.Table = undefined;
+
+var _reactabularTable = require('reactabular-table');
+
+var Table = _interopRequireWildcard(_reactabularTable);
+
+var _reactabularSticky = require('reactabular-sticky');
+
+var Sticky = _interopRequireWildcard(_reactabularSticky);
+
+var _reactabularSearch = require('reactabular-search');
+
+var search = _interopRequireWildcard(_reactabularSearch);
+
+var _reactabularSelect = require('reactabular-select');
+
+var select = _interopRequireWildcard(_reactabularSelect);
+
+var _reactabularSort = require('reactabular-sort');
+
+var sort = _interopRequireWildcard(_reactabularSort);
+
+var _reactabularHighlight = require('reactabular-highlight');
+
+var highlight = _interopRequireWildcard(_reactabularHighlight);
+
+var _reactabularResolve = require('reactabular-resolve');
+
+var resolve = _interopRequireWildcard(_reactabularResolve);
+
+var _reactabularResizable = require('reactabular-resizable');
+
+var _reactabularResizable2 = _interopRequireDefault(_reactabularResizable);
+
+var _reactabularSearchColumns = require('reactabular-search-columns');
+
+var _reactabularSearchColumns2 = _interopRequireDefault(_reactabularSearchColumns);
+
+var _reactabularSearchField = require('reactabular-search-field');
+
+var _reactabularSearchField2 = _interopRequireDefault(_reactabularSearchField);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+exports.Table = Table;
+exports.Sticky = Sticky;
+exports.SearchColumns = _reactabularSearchColumns2.default;
+exports.Search = _reactabularSearchField2.default;
+exports.search = search;
+exports.select = select;
+exports.sort = sort;
+exports.highlight = highlight;
+exports.resolve = resolve;
+exports.resizableColumn = _reactabularResizable2.default;
+  })();
+});
+
 require.register("redux-thunk/lib/index.js", function(exports, require, module) {
   require = __makeRelativeRequire(require, {}, "redux-thunk");
   (function() {
@@ -34808,12 +44398,26 @@ require.register("whatwg-fetch/fetch.js", function(exports, require, module) {
 })(typeof self !== 'undefined' ? self : this);
   })();
 });
+require.alias("base64-js/lib/b64.js", "base64-js");
+require.alias("buffer/index.js", "buffer");
 require.alias("es6-promise/dist/es6-promise.js", "es6-promise");
 require.alias("invariant/browser.js", "invariant");
 require.alias("jquery/dist/jquery.js", "jquery");
 require.alias("process/browser.js", "process");
 require.alias("react/react.js", "react");
 require.alias("react-redux/lib/index.js", "react-redux");
+require.alias("reactabular/dist/index.js", "reactabular");
+require.alias("reactabular-highlight/dist/index.js", "reactabular-highlight");
+require.alias("reactabular-resizable/dist/index.js", "reactabular-resizable");
+require.alias("reactabular-resolve/dist/index.js", "reactabular-resolve");
+require.alias("reactabular-search/dist/index.js", "reactabular-search");
+require.alias("reactabular-search-columns/dist/index.js", "reactabular-search-columns");
+require.alias("reactabular-search-field/dist/index.js", "reactabular-search-field");
+require.alias("reactabular-select/dist/index.js", "reactabular-select");
+require.alias("reactabular-sort/dist/index.js", "reactabular-sort");
+require.alias("reactabular-sticky/dist/index.js", "reactabular-sticky");
+require.alias("reactabular-table/dist/index.js", "reactabular-table");
+require.alias("reactabular-utils/dist/index.js", "reactabular-utils");
 require.alias("redux/lib/index.js", "redux");
 require.alias("redux-thunk/lib/index.js", "redux-thunk");
 require.alias("toastr/toastr.js", "toastr");

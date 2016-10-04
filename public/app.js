@@ -379,7 +379,7 @@ exports.default = _react2.default.createClass({
   render: function render() {
     var cardName = this.props.cardName;
     var className = this.props.isChosen ? 'Card-chosen' : 'Card';
-    var path = 'https://dreamerrr.me/media/poker/cards/' + cardName + '.png';
+    var path = 'http://dreamerrr.me/media/poker/cards/' + cardName + '.png';
 
     return _react2.default.createElement(
       'div',
@@ -388,82 +388,6 @@ exports.default = _react2.default.createClass({
     );
   }
 });
-});
-
-require.register("components/Combinations.jsx", function(exports, require, module) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require("react");
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = function () {
-  return _react2.default.createElement(
-    "div",
-    { className: "Combinations" },
-    _react2.default.createElement(
-      "div",
-      null,
-      "Combinations"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "High Card"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Pair"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Two Pairs"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Three of a Kind"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Straight"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Flush"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Full House"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Four of a Kind"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Straight Flush"
-    ),
-    _react2.default.createElement(
-      "div",
-      null,
-      "Royal Flush"
-    )
-  );
-};
 });
 
 require.register("components/Footer.jsx", function(exports, require, module) {
@@ -497,53 +421,7 @@ exports.default = function () {
 };
 });
 
-;require.register("components/Histogram.jsx", function(exports, require, module) {
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require('react');
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-exports.default = _react2.default.createClass({
-  displayName: 'Histogram',
-
-  propTypes: {
-    playerName: _react2.default.PropTypes.string.isRequired,
-    histogram: _react2.default.PropTypes.array
-  },
-
-  render: function render() {
-    var _this = this;
-
-    return _react2.default.createElement(
-      'div',
-      { className: 'Histogram' },
-      _react2.default.createElement(
-        'div',
-        null,
-        this.props.playerName
-      ),
-      [].concat(_toConsumableArray(Array(10))).map(function (x, i) {
-        return _react2.default.createElement(
-          'div',
-          { key: _this.props.playerName + '-field-' + i },
-          _this.props.histogram ? _this.props.histogram[i] + '%' : '-'
-        );
-      })
-    );
-  }
-});
-});
-
-require.register("components/Loader.jsx", function(exports, require, module) {
+;require.register("components/Loader.jsx", function(exports, require, module) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -754,7 +632,7 @@ exports.default = _react2.default.createClass({
     var selectedCard = this.props.selected;
     var isSelected = cardName === selectedCard;
     var className = isSelected ? 'Card-selected' : cardName.startsWith('X') ? 'Card' : 'Card-in';
-    var path = cardName.startsWith('X') ? 'https://dreamerrr.me/media/poker/cards/X.png' : 'https://dreamerrr.me/media/poker/cards/' + cardName + '.png';
+    var path = cardName.startsWith('X') ? 'http://dreamerrr.me/media/poker/cards/X.png' : 'http://dreamerrr.me/media/poker/cards/' + cardName + '.png';
 
     return _react2.default.createElement(
       'div',
@@ -1165,13 +1043,7 @@ var _react2 = _interopRequireDefault(_react);
 
 var _reactRedux = require('react-redux');
 
-var _Histogram = require('components/Histogram');
-
-var _Histogram2 = _interopRequireDefault(_Histogram);
-
-var _Combinations = require('components/Combinations');
-
-var _Combinations2 = _interopRequireDefault(_Combinations);
+var _reactabular = require('reactabular');
 
 var _Loader = require('components/Loader');
 
@@ -1179,13 +1051,103 @@ var _Loader2 = _interopRequireDefault(_Loader);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 var Statistics = function Statistics(_ref) {
   var playersAmount = _ref.playersAmount;
   var playerNames = _ref.playerNames;
   var histograms = _ref.histograms;
   var isCounting = _ref.isCounting;
+
+  var rows = [];
+  for (var i = 0; i < playersAmount; ++i) {
+    if (histograms[i]) {
+      rows.push({
+        id: 'histogram-' + (i + 1),
+        username: playerNames[i],
+        highCard: histograms[i][0],
+        pair: histograms[i][1],
+        twoPairs: histograms[i][2],
+        threeOfAKind: histograms[i][3],
+        straight: histograms[i][4],
+        flush: histograms[i][5],
+        fullHouse: histograms[i][6],
+        fourOfAKind: histograms[i][7],
+        straightFlush: histograms[i][8],
+        royalFlush: histograms[i][9]
+      });
+    } else {
+      rows.push({
+        id: 'histogram-' + (i + 1),
+        username: playerNames[i],
+        highCard: '-',
+        pair: '-',
+        twoPairs: '-',
+        threeOfAKind: '-',
+        straight: '-',
+        flush: '-',
+        fullHouse: '-',
+        fourOfAKind: '-',
+        straightFlush: '-',
+        royalFlush: '-'
+      });
+    }
+  }
+
+  var columns = [{
+    property: 'username',
+    header: {
+      label: 'Username'
+    }
+  }, {
+    property: 'highCard',
+    header: {
+      label: 'High Card'
+    }
+  }, {
+    property: 'pair',
+    header: {
+      label: 'Pair'
+    }
+  }, {
+    property: 'twoPairs',
+    header: {
+      label: 'Two Pairs'
+    }
+  }, {
+    property: 'threeOfAKind',
+    header: {
+      label: 'Three of a Kind'
+    }
+  }, {
+    property: 'straight',
+    header: {
+      label: 'Straight'
+    }
+  }, {
+    property: 'flush',
+    header: {
+      label: 'Flush'
+    }
+  }, {
+    property: 'fullHouse',
+    header: {
+      label: 'Full House'
+    }
+  }, {
+    property: 'fourOfAKind',
+    header: {
+      label: 'Four of a Kind'
+    }
+  }, {
+    property: 'straightFlush',
+    header: {
+      label: 'Straight Flush'
+    }
+  }, {
+    property: 'royalFlush',
+    header: {
+      label: 'Royal Flush'
+    }
+  }];
 
   if (isCounting) {
     return _react2.default.createElement(
@@ -1197,13 +1159,12 @@ var Statistics = function Statistics(_ref) {
     return _react2.default.createElement(
       'div',
       { className: 'Statistics' },
-      _react2.default.createElement(_Combinations2.default, null),
-      [].concat(_toConsumableArray(Array(playersAmount))).map(function (x, i) {
-        return _react2.default.createElement(_Histogram2.default, {
-          playerName: playerNames[i],
-          histogram: histograms[i],
-          key: 'histogram-' + i });
-      })
+      _react2.default.createElement(
+        _reactabular.Table.Provider,
+        { className: 'pure-table pure-table-striped', columns: columns },
+        _react2.default.createElement(_reactabular.Table.Header, null),
+        _react2.default.createElement(_reactabular.Table.Body, { rows: rows, rowKey: 'id' })
+      )
     );
   }
 };
@@ -1560,7 +1521,7 @@ var calculatePokerStatistics = exports.calculatePokerStatistics = function calcu
   }
 
   return new Promise(function (resolve, reject) {
-    fetch('https://dreamerrr.me/poker_calculator/count', {
+    fetch('http://dreamerrr.me/poker_calculator/count', {
       method: 'post',
       body: JSON.stringify({
         playersCards: _playerCards,
@@ -1717,7 +1678,8 @@ var getBoardCardsAmount = exports.getBoardCardsAmount = function getBoardCardsAm
 };
 });
 
-;require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {
+;require.alias("buffer/index.js", "buffer");
+require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 

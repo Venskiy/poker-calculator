@@ -293,6 +293,10 @@ body {
     color: #333; }
 
 /* line 334, /home/ilya/dev/poker-calculator/app/style/app.scss */
+.pure-table td {
+  padding: 0.35em 1em; }
+
+/* line 338, /home/ilya/dev/poker-calculator/app/style/app.scss */
 .Loader {
   color: #333;
   font-size: 90px;

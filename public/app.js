@@ -116,7 +116,7 @@
 })();
 
 (function() {
-var global = window;
+var global = typeof window === 'undefined' ? this : window;
 var process;
 var __makeRelativeRequire = function(require, mappings, pref) {
   var none = {};
@@ -151,9 +151,10 @@ var __makeRelativeRequire = function(require, mappings, pref) {
 };
 require.register("actions/actionTypes.js", function(exports, require, module) {
 "use strict";
+
 });
 
-;require.register("actions/cardActions.js", function(exports, require, module) {
+require.register("actions/cardActions.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -225,6 +226,7 @@ var changeSelectedCard = exports.changeSelectedCard = function changeSelectedCar
     });
   };
 };
+
 });
 
 require.register("actions/optionActions.js", function(exports, require, module) {
@@ -296,6 +298,7 @@ var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistic
     }
   };
 };
+
 });
 
 require.register("components/Board.jsx", function(exports, require, module) {
@@ -318,10 +321,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 exports.default = function (_ref) {
-  var cards = _ref.cards;
-  var selectedCard = _ref.selectedCard;
-  var onSelectCard = _ref.onSelectCard;
-  var onRemoveCard = _ref.onRemoveCard;
+  var cards = _ref.cards,
+      selectedCard = _ref.selectedCard,
+      onSelectCard = _ref.onSelectCard,
+      onRemoveCard = _ref.onRemoveCard;
 
   return _react2.default.createElement(
     'div',
@@ -336,9 +339,10 @@ exports.default = function (_ref) {
     })
   );
 };
+
 });
 
-;require.register("components/Card.jsx", function(exports, require, module) {
+require.register("components/Card.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -388,6 +392,7 @@ exports.default = _react2.default.createClass({
     );
   }
 });
+
 });
 
 require.register("components/Footer.jsx", function(exports, require, module) {
@@ -419,9 +424,10 @@ exports.default = function () {
     )
   );
 };
+
 });
 
-;require.register("components/Loader.jsx", function(exports, require, module) {
+require.register("components/Loader.jsx", function(exports, require, module) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -437,9 +443,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 exports.default = function () {
   return _react2.default.createElement("div", { className: "Loader" });
 };
+
 });
 
-;require.register("components/Player.jsx", function(exports, require, module) {
+require.register("components/Player.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -457,13 +464,13 @@ var _PokerTableCard2 = _interopRequireDefault(_PokerTableCard);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = function (_ref) {
-  var number = _ref.number;
-  var playerName = _ref.playerName;
-  var cards = _ref.cards;
-  var selectedCard = _ref.selectedCard;
-  var winningChances = _ref.winningChances;
-  var onSelectCard = _ref.onSelectCard;
-  var onRemoveCard = _ref.onRemoveCard;
+  var number = _ref.number,
+      playerName = _ref.playerName,
+      cards = _ref.cards,
+      selectedCard = _ref.selectedCard,
+      winningChances = _ref.winningChances,
+      onSelectCard = _ref.onSelectCard,
+      onRemoveCard = _ref.onRemoveCard;
 
   var className = 'Player-' + number;
   var cardNameFirst = cards['XF' + number];
@@ -498,9 +505,10 @@ exports.default = function (_ref) {
     )
   );
 };
+
 });
 
-;require.register("components/PlayerName.jsx", function(exports, require, module) {
+require.register("components/PlayerName.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -553,6 +561,7 @@ exports.default = _react2.default.createClass({
     );
   }
 });
+
 });
 
 require.register("components/PlayersAmount.jsx", function(exports, require, module) {
@@ -599,6 +608,7 @@ exports.default = _react2.default.createClass({
     );
   }
 });
+
 });
 
 require.register("components/PokerTableCard.jsx", function(exports, require, module) {
@@ -641,6 +651,7 @@ exports.default = _react2.default.createClass({
     );
   }
 });
+
 });
 
 require.register("components/SplitPotBox.jsx", function(exports, require, module) {
@@ -666,9 +677,10 @@ exports.default = function (_ref) {
     splitPotChance ? splitPotChance + '%' : '-'
   );
 };
+
 });
 
-;require.register("container/App.jsx", function(exports, require, module) {
+require.register("container/App.jsx", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -742,6 +754,7 @@ var mapStateToProps = function mapStateToProps(state) {
 };
 
 exports.default = (0, _reactRedux.connect)(mapStateToProps)(App);
+
 });
 
 require.register("container/CardsBlock.jsx", function(exports, require, module) {
@@ -768,9 +781,9 @@ var _cards = require('utils/cards');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var CardsBlock = function CardsBlock(_ref) {
-  var chosenCards = _ref.chosenCards;
-  var selectedCard = _ref.selectedCard;
-  var addPokerTableCard = _ref.addPokerTableCard;
+  var chosenCards = _ref.chosenCards,
+      selectedCard = _ref.selectedCard,
+      addPokerTableCard = _ref.addPokerTableCard;
 
   return _react2.default.createElement(
     'div',
@@ -813,6 +826,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
 };
 
 exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(CardsBlock);
+
 });
 
 require.register("container/Options.jsx", function(exports, require, module) {
@@ -845,12 +859,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var Options = function Options(_ref) {
-  var playersAmount = _ref.playersAmount;
-  var playersNames = _ref.playersNames;
-  var changePlayersAmount = _ref.changePlayersAmount;
-  var addPokerStatistics = _ref.addPokerStatistics;
-  var reset = _ref.reset;
-  var changePlayerName = _ref.changePlayerName;
+  var playersAmount = _ref.playersAmount,
+      playersNames = _ref.playersNames,
+      changePlayersAmount = _ref.changePlayersAmount,
+      addPokerStatistics = _ref.addPokerStatistics,
+      reset = _ref.reset,
+      changePlayerName = _ref.changePlayerName;
 
   return _react2.default.createElement(
     'div',
@@ -923,6 +937,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
 };
 
 exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(Options);
+
 });
 
 require.register("container/PokerTable.jsx", function(exports, require, module) {
@@ -957,15 +972,15 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var PokerTable = function PokerTable(_ref) {
-  var playersAmount = _ref.playersAmount;
-  var playerNames = _ref.playerNames;
-  var playerCards = _ref.playerCards;
-  var boardCards = _ref.boardCards;
-  var selectedCard = _ref.selectedCard;
-  var winningChances = _ref.winningChances;
-  var onSelectCard = _ref.onSelectCard;
-  var removePlayerCard = _ref.removePlayerCard;
-  var removeBoardCard = _ref.removeBoardCard;
+  var playersAmount = _ref.playersAmount,
+      playerNames = _ref.playerNames,
+      playerCards = _ref.playerCards,
+      boardCards = _ref.boardCards,
+      selectedCard = _ref.selectedCard,
+      winningChances = _ref.winningChances,
+      onSelectCard = _ref.onSelectCard,
+      removePlayerCard = _ref.removePlayerCard,
+      removeBoardCard = _ref.removeBoardCard;
 
   return _react2.default.createElement(
     'div',
@@ -1028,6 +1043,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
 };
 
 exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(PokerTable);
+
 });
 
 require.register("container/Statistics.jsx", function(exports, require, module) {
@@ -1052,10 +1068,10 @@ var _Loader2 = _interopRequireDefault(_Loader);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Statistics = function Statistics(_ref) {
-  var playersAmount = _ref.playersAmount;
-  var playerNames = _ref.playerNames;
-  var histograms = _ref.histograms;
-  var isCounting = _ref.isCounting;
+  var playersAmount = _ref.playersAmount,
+      playerNames = _ref.playerNames,
+      histograms = _ref.histograms,
+      isCounting = _ref.isCounting;
 
   var rows = [];
   for (var i = 0; i < playersAmount; ++i) {
@@ -1176,6 +1192,7 @@ var mapStateToProps = function mapStateToProps(state) {
 };
 
 exports.default = (0, _reactRedux.connect)(mapStateToProps)(Statistics);
+
 });
 
 require.register("initialize.js", function(exports, require, module) {
@@ -1240,6 +1257,7 @@ document.addEventListener('DOMContentLoaded', function () {
     _react2.default.createElement(_App2.default, null)
   ), el);
 });
+
 });
 
 require.register("reducers/cardReducer.js", function(exports, require, module) {
@@ -1257,7 +1275,7 @@ var _initialState2 = _interopRequireDefault(_initialState);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function cardReducer() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? _initialState2.default.cards : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _initialState2.default.cards;
   var action = arguments[1];
 
   var playerCards = void 0;
@@ -1365,6 +1383,7 @@ function cardReducer() {
       return state;
   }
 }
+
 });
 
 ;require.register("reducers/initialState.js", function(exports, require, module) {
@@ -1401,6 +1420,7 @@ exports.default = {
     isCounting: false
   }
 };
+
 });
 
 require.register("reducers/optionReducer.js", function(exports, require, module) {
@@ -1418,7 +1438,7 @@ var _initialState2 = _interopRequireDefault(_initialState);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function optionReducer() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? _initialState2.default.options : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _initialState2.default.options;
   var action = arguments[1];
 
   var pokerTableCards = void 0;
@@ -1445,6 +1465,7 @@ function optionReducer() {
       return state;
   }
 }
+
 });
 
 ;require.register("reducers/rootReducer.js", function(exports, require, module) {
@@ -1472,13 +1493,15 @@ var rootReducer = (0, _redux.combineReducers)({
 });
 
 exports.default = rootReducer;
+
 });
 
 require.register("style/app.scss.js", function(exports, require, module) {
 "use strict";
+
 });
 
-;require.register("utils/calculatePokerStatistics.js", function(exports, require, module) {
+require.register("utils/calculatePokerStatistics.js", function(exports, require, module) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1534,6 +1557,7 @@ var calculatePokerStatistics = exports.calculatePokerStatistics = function calcu
     });
   });
 };
+
 });
 
 require.register("utils/cards.js", function(exports, require, module) {
@@ -1544,6 +1568,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 var values = exports.values = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
 var suits = exports.suits = ['S', 'C', 'D', 'H'];
+
 });
 
 require.register("utils/changeSelection.js", function(exports, require, module) {
@@ -1628,6 +1653,7 @@ var changeSelection = exports.changeSelection = function changeSelection(players
   }
   return Promise.resolve('');
 };
+
 });
 
 require.register("utils/utils.js", function(exports, require, module) {
@@ -1676,9 +1702,10 @@ var getBoardCardsAmount = exports.getBoardCardsAmount = function getBoardCardsAm
 
   return amount;
 };
+
 });
 
-;require.alias("buffer/index.js", "buffer");
+require.alias("buffer/index.js", "buffer");
 require.alias("process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');

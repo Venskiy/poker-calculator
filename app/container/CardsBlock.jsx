@@ -6,7 +6,7 @@ import Card from 'components/Card';
 import {values, suits} from 'utils/cards';
 
 const CardsBlock = ({chosenCards, selectedCard, addPokerTableCard}) => {
-  return <div className="CardsBlock">
+  return <div className="CardsBlock playingCards fourColours inText">
     {suits.map(suit => {
       return <div className="CardsBlock-suit" key={suit}>
         {values.map(value => {
@@ -14,6 +14,8 @@ const CardsBlock = ({chosenCards, selectedCard, addPokerTableCard}) => {
           const isChosen = chosenCards.findIndex(card => card === cardName) > -1;
           return <Card
                    cardName={cardName}
+                   cardSuit={suit}
+                   cardValue={value}
                    isChosen={isChosen}
                    selectedCard={selectedCard}
                    onClickCard={addPokerTableCard}

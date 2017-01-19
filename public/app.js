@@ -357,6 +357,8 @@ var _toastr = require('toastr');
 
 var _toastr2 = _interopRequireDefault(_toastr);
 
+var _cards = require('utils/cards');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _react2.default.createClass({
@@ -364,6 +366,8 @@ exports.default = _react2.default.createClass({
 
   propTypes: {
     cardName: _react2.default.PropTypes.string.isRequired,
+    cardSuit: _react2.default.PropTypes.string.isRequired,
+    cardValue: _react2.default.PropTypes.string.isRequired,
     isChosen: _react2.default.PropTypes.bool.isRequired,
     selectedCard: _react2.default.PropTypes.string.isRequired,
     onClickCard: _react2.default.PropTypes.func.isRequired
@@ -382,13 +386,23 @@ exports.default = _react2.default.createClass({
   },
   render: function render() {
     var cardName = this.props.cardName;
-    var className = this.props.isChosen ? 'Card-chosen' : 'Card';
-    var path = 'http://dreamerrr.me/media/poker/cards/' + cardName + '.png';
+    var cardSuit = (0, _cards.getCardSuit)(this.props.cardSuit);
+    var cardSuitBadge = (0, _cards.getCardSuitBadge)(this.props.cardSuit);
+    var className = 'card rank-' + this.props.cardValue.toLowerCase() + ' ' + cardSuit + ' ' + (this.props.isChosen ? 'Card-chosen' : 'Card');
 
     return _react2.default.createElement(
       'div',
       { className: className, onClick: this.handleClick.bind(this, cardName) },
-      _react2.default.createElement('img', { src: path })
+      _react2.default.createElement(
+        'span',
+        { className: 'rank' },
+        this.props.cardValue
+      ),
+      _react2.default.createElement(
+        'span',
+        { className: 'suit' },
+        cardSuitBadge
+      )
     );
   }
 });
@@ -787,7 +801,7 @@ var CardsBlock = function CardsBlock(_ref) {
 
   return _react2.default.createElement(
     'div',
-    { className: 'CardsBlock' },
+    { className: 'CardsBlock playingCards fourColours inText' },
     _cards.suits.map(function (suit) {
       return _react2.default.createElement(
         'div',
@@ -799,6 +813,8 @@ var CardsBlock = function CardsBlock(_ref) {
           }) > -1;
           return _react2.default.createElement(_Card2.default, {
             cardName: cardName,
+            cardSuit: suit,
+            cardValue: value,
             isChosen: isChosen,
             selectedCard: selectedCard,
             onClickCard: addPokerTableCard,
@@ -1567,7 +1583,37 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 var values = exports.values = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
-var suits = exports.suits = ['S', 'C', 'D', 'H'];
+var suits = exports.suits = ['D', 'H', 'S', 'C'];
+
+var getCardSuit = exports.getCardSuit = function getCardSuit(cardSuit) {
+  switch (cardSuit) {
+    case 'D':
+      return 'diams';
+    case 'H':
+      return 'hearts';
+    case 'S':
+      return 'spades';
+    case 'C':
+      return 'clubs';
+    default:
+      break;
+  }
+};
+
+var getCardSuitBadge = exports.getCardSuitBadge = function getCardSuitBadge(cardSuit) {
+  switch (cardSuit) {
+    case 'S':
+      return '♠';
+    case 'C':
+      return '♣';
+    case 'D':
+      return '♦';
+    case 'H':
+      return '♥';
+    default:
+      break;
+  }
+};
 
 });
 

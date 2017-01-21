@@ -9,7 +9,7 @@ import SplitPotBox from 'components/SplitPotBox';
 const PokerTable = ({playersAmount, playerNames, playerCards, boardCards,
                     selectedCard, winningChances, onSelectCard, removePlayerCard,
                     removeBoardCard}) => {
-  return <div className="PokerTable">
+  return <div className="PokerTable playingCards fourColours inText">
     <SplitPotBox splitPotChance={winningChances[0]} />
     <Board
       cards={boardCards}

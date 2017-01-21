@@ -636,6 +636,8 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _cards = require('utils/cards');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _react2.default.createClass({
@@ -655,14 +657,31 @@ exports.default = _react2.default.createClass({
     var cardName = this.props.cardName;
     var selectedCard = this.props.selected;
     var isSelected = cardName === selectedCard;
-    var className = isSelected ? 'Card-selected' : cardName.startsWith('X') ? 'Card' : 'Card-in';
-    var path = cardName.startsWith('X') ? 'http://dreamerrr.me/media/poker/cards/X.png' : 'http://dreamerrr.me/media/poker/cards/' + cardName + '.png';
 
-    return _react2.default.createElement(
-      'div',
-      { className: className, onClick: this.handleClick.bind(this, cardName) },
-      _react2.default.createElement('img', { src: path })
-    );
+    if (cardName.startsWith('X')) {
+      var className = (isSelected ? 'Card-selected' : 'Card') + ' card back';
+
+      return _react2.default.createElement('div', { className: className });
+    } else {
+      var cardSuit = (0, _cards.getCardSuit)(cardName[1]);
+      var cardSuitBadge = (0, _cards.getCardSuitBadge)(cardName[1]);
+      var _className = (isSelected ? 'Card-selected' : 'Card-in') + ' card rank-' + cardName[0].toLowerCase() + ' ' + cardSuit;
+
+      return _react2.default.createElement(
+        'div',
+        { className: _className, onClick: this.handleClick.bind(this, cardName) },
+        _react2.default.createElement(
+          'span',
+          { className: 'rank' },
+          cardName[0]
+        ),
+        _react2.default.createElement(
+          'span',
+          { className: 'suit' },
+          cardSuitBadge
+        )
+      );
+    }
   }
 });
 
@@ -1000,7 +1019,7 @@ var PokerTable = function PokerTable(_ref) {
 
   return _react2.default.createElement(
     'div',
-    { className: 'PokerTable' },
+    { className: 'PokerTable playingCards fourColours inText' },
     _react2.default.createElement(_SplitPotBox2.default, { splitPotChance: winningChances[0] }),
     _react2.default.createElement(_Board2.default, {
       cards: boardCards,

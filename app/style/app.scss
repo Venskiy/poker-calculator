@@ -54,7 +54,6 @@ body {
 
   &-in {
     @extend .Card;
-    background-image: url(http://dreamerrr.me/media/poker/delete-cross.png);
     background-repeat: no-repeat;
     background-size: 40px;
     background-position: center;
@@ -62,9 +61,7 @@ body {
   }
 
   &-in:hover {
-    img {
-      opacity: 0;
-    }
+    background-image: url(http://dreamerrr.me/media/poker/delete-cross.png);
   }
 }
 

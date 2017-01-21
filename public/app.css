@@ -39,13 +39,12 @@ body {
     height: 58px;
     border: 2px solid #6e84cf; }
   .Card-in {
-    background-image: url(http://dreamerrr.me/media/poker/delete-cross.png);
     background-repeat: no-repeat;
     background-size: 40px;
     background-position: center;
     margin: 1px; }
-  .Card-in:hover img {
-    opacity: 0; }
+  .Card-in:hover {
+    background-image: url(http://dreamerrr.me/media/poker/delete-cross.png); }
 
 .PokerTable {
   flex: 0 0 535px;

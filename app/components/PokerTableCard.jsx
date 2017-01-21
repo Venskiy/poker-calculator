@@ -1,5 +1,7 @@
 import React from 'react';
 
+import {getCardSuit, getCardSuitBadge} from 'utils/cards';
+
 export default React.createClass({
   propTypes: {
     cardName: React.PropTypes.string.isRequired,
@@ -16,11 +18,21 @@ export default React.createClass({
     const cardName = this.props.cardName;
     const selectedCard = this.props.selected;
     const isSelected = cardName === selectedCard;
-    const className = isSelected ? 'Card-selected' : (cardName.startsWith('X') ? 'Card' : 'Card-in');
-    const path = cardName.startsWith('X') ? 'http://dreamerrr.me/media/poker/cards/X.png' : `http://dreamerrr.me/media/poker/cards/${cardName}.png`;
 
-    return <div className={className} onClick={this.handleClick.bind(this, cardName)}>
-      <img src={path} />
-    </div>
+    if(cardName.startsWith('X')) {
+      const className = `${isSelected ? 'Card-selected': 'Card'} card back`
+
+      return <div className={className}></div>
+    }
+    else {
+      const cardSuit = getCardSuit(cardName[1]);
+      const cardSuitBadge = getCardSuitBadge(cardName[1]);
+      const className = `${isSelected ? 'Card-selected' : 'Card-in'} card rank-${cardName[0].toLowerCase()} ${cardSuit}`
+
+      return <div className={className} onClick={this.handleClick.bind(this, cardName)}>
+        <span className="rank">{cardName[0]}</span>
+        <span className="suit">{cardSuitBadge}</span>
+      </div>
+    }
   }
 });

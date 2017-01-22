@@ -80,62 +80,62 @@ body {
 
 .Player {
   width: 100px;
-  height: 100px;
+  height: 88px;
   display: inline-block;
   position: relative;
 
   &-1 {
     @extend .Player;
     left: 90px;
-    top: -93px;
+    top: -80px;
   }
 
   &-2 {
     @extend .Player;
-    left: -98px;
-    top: -23px;
+    left: -90px;
+    top: -25px;
   }
 
   &-3 {
     @extend .Player;
-    left: -190px;
-    top: 78px;
+    left: -164px;
+    top: 68px;
   }
 
   &-4 {
     @extend .Player;
-    left: -188px;
-    top: 92px;
+    left: -168px;
+    top: 93px;
   }
 
   &-5 {
     @extend .Player;
-    left: -184px;
-    top: 92px;
+    left: -174px;
+    top: 93px;
   }
 
   &-6 {
     @extend .Player;
-    left: 321px;
-    top: -9px;
+    left: 320px;
+    top: 5px;
   }
 
   &-7 {
     @extend .Player;
-    left: 325px;
+    left: 315px;
     top: -22px;
   }
 
   &-8 {
     @extend .Player;
-    left: 237px;
-    top: -123px;
+    left: 230px;
+    top: -115px;
   }
 
   &-9 {
     @extend .Player;
-    left: 51px;
-    top: -194px;
+    left: 49px;
+    top: -168px;
   }
 }
 
@@ -160,18 +160,18 @@ body {
 .Board {
   display: flex;
   position: relative;
-  width: 230px;
-  height: 62px;
-  left: 161px;
-  top: 81px;
+  width: 206px;
+  height: 51px;
+  left: 171px;
+  top: 88px;
 }
 
 .SplitPotBox {
   display: inline-block;
   position: relative;
-  width: 140px;
-  left: 223px;
-  top: 80px;
+  width: 160px;
+  left: 198px;
+  top: 86px;
   color: #0091ff;
 }
 

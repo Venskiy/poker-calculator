@@ -31,7 +31,8 @@ body {
 .Card, .Card-chosen, .Card-in {
   width: 40px;
   height: 58px;
-  border: 1px solid #333; }
+  border: 1px solid #333;
+  cursor: pointer; }
   .Card-chosen {
     opacity: 0.2; }
   .Card-selected {

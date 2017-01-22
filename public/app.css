@@ -233,11 +233,12 @@ body {
   font-size: 1.2em;
   margin-top: 9px; }
   .Footer div {
-    width: 180px;
+    width: 360px;
     margin-left: auto;
-    margin-right: auto; }
+    margin-right: auto;
+    color: #555; }
   .Footer a {
-    color: #000; }
+    color: #555; }
   .Footer a:hover {
     color: #333; }
 

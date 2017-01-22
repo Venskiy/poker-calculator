@@ -438,6 +438,12 @@ exports.default = function () {
         "a",
         { href: "https://github.com/Venskiy", target: "_blank" },
         "Venskiy Ilya"
+      ),
+      ".\xA0",
+      _react2.default.createElement(
+        "a",
+        { href: "https://github.com/Venskiy/poker-calculator", target: "_blank" },
+        "Github Repository."
       )
     )
   );

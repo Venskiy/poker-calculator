@@ -1,4 +1,4 @@
-# poker-outs
+# Poker Calculator
 
 App for counting simple poker statistics.
 

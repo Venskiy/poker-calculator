@@ -2,6 +2,9 @@ require('es6-promise').polyfill();
 require('whatwg-fetch')
 
 import 'style/app.scss';
+import 'style/cards.css';
+import 'style/cards-ie.css';
+import 'style/cards-ie9.css';
 
 import ReactDOM from 'react-dom';
 import React from 'react';

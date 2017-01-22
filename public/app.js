@@ -920,7 +920,7 @@ var Options = function Options(_ref) {
       _react2.default.createElement(
         'div',
         { className: 'SelectText' },
-        'Select the amount of players:'
+        'Amount of players:'
       ),
       _react2.default.createElement(
         'div',

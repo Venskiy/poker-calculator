@@ -9,7 +9,7 @@ import PlayerName from 'components/PlayerName';
 const Options = ({playersAmount, playersNames, changePlayersAmount, addPokerStatistics, reset, changePlayerName}) => {
   return <div className="Options">
     <div className="PlayersAmount">
-      <div className="SelectText">Select the amount of players:</div>
+      <div className="SelectText">Amount of players:</div>
       <div className="CustomSelect">
         <PlayersAmount
           playersAmount={playersAmount}

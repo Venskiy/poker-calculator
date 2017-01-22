@@ -159,7 +159,8 @@ body {
     font-size: 12px; }
 
 .Options {
-  flex: 0 0 285px; }
+  flex: 0 0 285px;
+  margin-left: 5px; }
 
 .PlayersAmount {
   margin: 7px; }
@@ -197,7 +198,6 @@ body {
   color: #000000;
   font-size: 16px;
   background: #ffffff;
-  padding: 7px 26px 7px 26px;
   margin: 5px;
   border: solid #000000 1px;
   text-decoration: none; }
@@ -215,6 +215,7 @@ body {
     float: left;
     margin: 0; }
   .ChangeNameArea input {
+    width: 105px;
     border-radius: 5px;
     border: 1px solid #333;
     margin-bottom: 1px;
@@ -224,7 +225,7 @@ body {
 
 .ChangeName {
   display: inline;
-  margin: 3px; }
+  margin: 2px; }
 
 .Footer {
   flex: 0 0 25px;

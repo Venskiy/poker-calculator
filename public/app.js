@@ -650,8 +650,11 @@ exports.default = _react2.default.createClass({
     onRemove: _react2.default.PropTypes.func.isRequired
   },
 
-  handleClick: function handleClick(cardName) {
-    cardName.startsWith('X') ? this.props.onSelect(cardName) : this.props.onRemove(cardName);
+  handleSelect: function handleSelect(cardName) {
+    this.props.onSelect(cardName);
+  },
+  handleRemove: function handleRemove(cardName) {
+    this.props.onRemove(cardName);
   },
   render: function render() {
     var cardName = this.props.cardName;
@@ -661,7 +664,7 @@ exports.default = _react2.default.createClass({
     if (cardName.startsWith('X')) {
       var className = (isSelected ? 'Card-selected' : 'Card') + ' card back';
 
-      return _react2.default.createElement('div', { className: className });
+      return _react2.default.createElement('div', { className: className, onClick: this.handleSelect.bind(this, cardName) });
     } else {
       var cardSuit = (0, _cards.getCardSuit)(cardName[1]);
       var cardSuitBadge = (0, _cards.getCardSuitBadge)(cardName[1]);
@@ -669,7 +672,7 @@ exports.default = _react2.default.createClass({
 
       return _react2.default.createElement(
         'div',
-        { className: _className, onClick: this.handleClick.bind(this, cardName) },
+        { className: _className, onClick: this.handleRemove.bind(this, cardName) },
         _react2.default.createElement(
           'span',
           { className: 'rank' },

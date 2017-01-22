@@ -10,10 +10,14 @@ export default React.createClass({
     onRemove: React.PropTypes.func.isRequired
   },
 
-  handleClick(cardName) {
-    cardName.startsWith('X') ? this.props.onSelect(cardName) : this.props.onRemove(cardName);
+  handleSelect(cardName) {
+    this.props.onSelect(cardName);
   },
 
+  handleRemove(cardName) {
+    this.props.onRemove(cardName);
+  },
+  
   render() {
     const cardName = this.props.cardName;
     const selectedCard = this.props.selected;
@@ -22,14 +26,14 @@ export default React.createClass({
     if(cardName.startsWith('X')) {
       const className = `${isSelected ? 'Card-selected': 'Card'} card back`
 
-      return <div className={className}></div>
+      return <div className={className} onClick={this.handleSelect.bind(this, cardName)}></div>
     }
     else {
       const cardSuit = getCardSuit(cardName[1]);
       const cardSuitBadge = getCardSuitBadge(cardName[1]);
       const className = `${isSelected ? 'Card-selected' : 'Card-in'} card rank-${cardName[0].toLowerCase()} ${cardSuit}`
 
-      return <div className={className} onClick={this.handleClick.bind(this, cardName)}>
+      return <div className={className} onClick={this.handleRemove.bind(this, cardName)}>
         <span className="rank">{cardName[0]}</span>
         <span className="suit">{cardSuitBadge}</span>
       </div>

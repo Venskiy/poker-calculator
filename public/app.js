@@ -1117,16 +1117,16 @@ var Statistics = function Statistics(_ref) {
       rows.push({
         id: 'histogram-' + (i + 1),
         username: playerNames[i],
-        highCard: histograms[i][0],
-        pair: histograms[i][1],
-        twoPairs: histograms[i][2],
-        threeOfAKind: histograms[i][3],
-        straight: histograms[i][4],
-        flush: histograms[i][5],
-        fullHouse: histograms[i][6],
-        fourOfAKind: histograms[i][7],
-        straightFlush: histograms[i][8],
-        royalFlush: histograms[i][9]
+        highCard: histograms[i][0] + '%',
+        pair: histograms[i][1] + '%',
+        twoPairs: histograms[i][2] + '%',
+        threeOfAKind: histograms[i][3] + '%',
+        straight: histograms[i][4] + '%',
+        flush: histograms[i][5] + '%',
+        fullHouse: histograms[i][6] + '%',
+        fourOfAKind: histograms[i][7] + '%',
+        straightFlush: histograms[i][8] + '%',
+        royalFlush: histograms[i][9] + '%'
       });
     } else {
       rows.push({

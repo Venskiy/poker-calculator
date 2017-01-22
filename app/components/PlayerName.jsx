@@ -10,11 +10,11 @@ export default React.createClass({
 
   handeOnChange(playerName) {
     const name = this.refs.playerName.value;
-    if(name.length < 12) {
+    if(name.length < 10) {
       this.props.onChangePlayerName(this.props.playerId, name);
     }
     else {
-      toastr.error("Player's name must be less than 12 characters");
+      toastr.error("Player's name must be less than 10 characters");
     }
   },
 

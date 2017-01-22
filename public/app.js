@@ -550,10 +550,10 @@ exports.default = _react2.default.createClass({
 
   handeOnChange: function handeOnChange(playerName) {
     var name = this.refs.playerName.value;
-    if (name.length < 12) {
+    if (name.length < 10) {
       this.props.onChangePlayerName(this.props.playerId, name);
     } else {
-      _toastr2.default.error("Player's name must be less than 12 characters");
+      _toastr2.default.error("Player's name must be less than 10 characters");
     }
   },
   render: function render() {

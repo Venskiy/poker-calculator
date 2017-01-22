@@ -1,6 +1,7 @@
 import React from 'react';
 import {connect} from 'react-redux';
 import {selectCard, removePlayerCard, removeBoardCard, removeChosenCard} from 'actions/cardActions';
+import {addPokerStatistics} from 'actions/optionActions';
 
 import Player from 'components/Player';
 import Board from 'components/Board';
@@ -44,15 +45,18 @@ const mapDispatchToProps = (dispatch) => ({
   removePlayerCard(cardName) {
     dispatch(removePlayerCard(cardName));
     dispatch(removeChosenCard(cardName));
+    dispatch(addPokerStatistics(true));
   },
 
   removeBoardCard(cardName) {
     dispatch(removeBoardCard(cardName));
     dispatch(removeChosenCard(cardName));
+    dispatch(addPokerStatistics(true));
   },
 
   removeCardFromPokerTable(cardName) {
     dispatch(removeCardFromPokerTable(cardName));
+    dispatch(addPokerStatistics(true));
   }
 });
 

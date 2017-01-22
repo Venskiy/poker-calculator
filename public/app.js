@@ -280,12 +280,14 @@ var completeCounting = exports.completeCounting = function completeCounting() {
   };
 };
 
-var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics() {
+var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistics(isAutomatically) {
   return function (dispatch, getState) {
     if ((0, _utils.isPlayerCardsFilled)(getState().options.playersAmount, getState().cards.playerCards)) {
       var amount = (0, _utils.getBoardCardsAmount)(getState().cards.boardCards);
       if (amount === 1 || amount === 2) {
-        _toastr2.default.error('Board must contain 0, 3, 4, or 5 cards.');
+        if (!isAutomatically) {
+          _toastr2.default.error('Board must contain 0, 3, 4, or 5 cards.');
+        }
       } else {
         dispatch(beginCounting());
         (0, _calculatePokerStatistics.calculatePokerStatistics)(getState().options.playersAmount, getState().cards.playerCards, getState().cards.boardCards).then(function (pokerStatistics) {
@@ -294,7 +296,9 @@ var addPokerStatistics = exports.addPokerStatistics = function addPokerStatistic
         });
       }
     } else {
-      _toastr2.default.error("All player's positions must be filled.");
+      if (!isAutomatically) {
+        _toastr2.default.error("All player's positions must be filled.");
+      }
     }
   };
 };
@@ -808,6 +812,8 @@ var _reactRedux = require('react-redux');
 
 var _cardActions = require('actions/cardActions');
 
+var _optionActions = require('actions/optionActions');
+
 var _Card = require('components/Card');
 
 var _Card2 = _interopRequireDefault(_Card);
@@ -859,6 +865,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
       dispatch((0, _cardActions.addPokerTableCard)(cardName));
       dispatch((0, _cardActions.addChosenCard)(cardName));
       dispatch((0, _cardActions.changeSelectedCard)());
+      dispatch((0, _optionActions.addPokerStatistics)(true));
     }
   };
 };
@@ -960,9 +967,10 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
       dispatch((0, _optionActions.setPlayersAmount)(playersAmount));
       dispatch((0, _cardActions.setPlayerCards)(playersAmount));
       dispatch((0, _cardActions.changeSelectedCard)());
+      dispatch((0, _optionActions.addPokerStatistics)(true));
     },
     addPokerStatistics: function addPokerStatistics() {
-      dispatch((0, _optionActions.addPokerStatistics)());
+      dispatch((0, _optionActions.addPokerStatistics)(false));
     },
     reset: function reset() {
       dispatch((0, _optionActions.resetOptions)());
@@ -992,6 +1000,8 @@ var _react2 = _interopRequireDefault(_react);
 var _reactRedux = require('react-redux');
 
 var _cardActions = require('actions/cardActions');
+
+var _optionActions = require('actions/optionActions');
 
 var _Player = require('components/Player');
 
@@ -1059,10 +1069,12 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
     removePlayerCard: function removePlayerCard(cardName) {
       dispatch((0, _cardActions.removePlayerCard)(cardName));
       dispatch((0, _cardActions.removeChosenCard)(cardName));
+      dispatch((0, _optionActions.addPokerStatistics)(true));
     },
     removeBoardCard: function removeBoardCard(cardName) {
       dispatch((0, _cardActions.removeBoardCard)(cardName));
       dispatch((0, _cardActions.removeChosenCard)(cardName));
+      dispatch((0, _optionActions.addPokerStatistics)(true));
     },
     removeCardFromPokerTable: function (_removeCardFromPokerTable) {
       function removeCardFromPokerTable(_x) {
@@ -1076,6 +1088,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
       return removeCardFromPokerTable;
     }(function (cardName) {
       dispatch(removeCardFromPokerTable(cardName));
+      dispatch((0, _optionActions.addPokerStatistics)(true));
     })
   };
 };

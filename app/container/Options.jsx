@@ -48,10 +48,11 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(setPlayersAmount(playersAmount));
     dispatch(setPlayerCards(playersAmount));
     dispatch(changeSelectedCard());
+    dispatch(addPokerStatistics(true));
   },
 
   addPokerStatistics() {
-    dispatch(addPokerStatistics());
+    dispatch(addPokerStatistics(false));
   },
 
   reset() {

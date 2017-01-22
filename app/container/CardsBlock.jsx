@@ -1,6 +1,7 @@
 import React from 'react';
 import {connect} from 'react-redux';
 import {addPokerTableCard, addChosenCard, changeSelectedCard} from 'actions/cardActions';
+import {addPokerStatistics} from 'actions/optionActions';
 
 import Card from 'components/Card';
 import {values, suits} from 'utils/cards';
@@ -35,6 +36,7 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(addPokerTableCard(cardName));
     dispatch(addChosenCard(cardName));
     dispatch(changeSelectedCard());
+    dispatch(addPokerStatistics(true));
   }
 });
 

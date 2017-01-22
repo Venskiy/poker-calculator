@@ -25,12 +25,14 @@ export const completeCounting = () => ({
   type: 'COMPLETE_COUNTING'
 });
 
-export const addPokerStatistics = () => {
+export const addPokerStatistics = (isAutomatically) => {
   return (dispatch, getState) => {
     if(isPlayerCardsFilled(getState().options.playersAmount, getState().cards.playerCards)) {
       const amount = getBoardCardsAmount(getState().cards.boardCards);
       if(amount === 1 || amount === 2) {
-        toastr.error('Board must contain 0, 3, 4, or 5 cards.');
+        if(!isAutomatically) {
+          toastr.error('Board must contain 0, 3, 4, or 5 cards.');
+        }
       }
       else {
         dispatch(beginCounting());
@@ -43,7 +45,9 @@ export const addPokerStatistics = () => {
       }
     }
     else {
-      toastr.error("All player's positions must be filled.");
+      if(!isAutomatically) {
+        toastr.error("All player's positions must be filled.");
+      }
     }
   };
 };

@@ -21,7 +21,7 @@ export default function cardReducer(state = initialState.cards, action) {
                                        boardCards: boardCards});
     case 'REMOVE_PLAYER_CARD':
       playerCards = Object.assign({}, state.playerCards);
-      for (var key of Object.keys(playerCards)) {
+      for (let key of Object.keys(playerCards)) {
         if(playerCards[key] === action.cardName) {
           playerCards[key] = key;
           selectedCard = key;
@@ -32,7 +32,7 @@ export default function cardReducer(state = initialState.cards, action) {
                                        playerCards: playerCards});
     case 'REMOVE_BOARD_CARD':
       boardCards = Object.assign({}, state.boardCards);
-      for (var key of Object.keys(boardCards)) {
+      for (let key of Object.keys(boardCards)) {
         if(boardCards[key] === action.cardName) {
           boardCards[key] = key;
           selectedCard = key;
@@ -42,12 +42,9 @@ export default function cardReducer(state = initialState.cards, action) {
       return Object.assign({}, state, {selectedCard: selectedCard,
                                       boardCards: boardCards});
     case 'ADD_CHOSEN_CARD':
-      chosenCards = Array.from(state.chosenCards);
-      chosenCards.push(action.cardName);
-      return Object.assign({}, state, {chosenCards: chosenCards});
+      return Object.assign({}, state, {chosenCards: state.chosenCards.concat(action.cardName)});
     case 'REMOVE_CHOSEN_CARD':
-      chosenCards = state.chosenCards.filter(card => card !== action.cardName);
-      return Object.assign({}, state, {chosenCards: chosenCards});
+      return Object.assign({}, state, {chosenCards: state.chosenCards.filter(card => card !== action.cardName)});
     case 'SET_PLAYER_CARDS':
       playerCards = Object.assign({}, state.playerCards);
       for(let i = parseInt(action.playersAmount); i < 9; ++i) {

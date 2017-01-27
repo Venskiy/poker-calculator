@@ -1399,11 +1399,11 @@ function cardReducer() {
 
       try {
         for (var _iterator2 = Object.keys(boardCards)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var key = _step2.value;
+          var _key = _step2.value;
 
-          if (boardCards[key] === action.cardName) {
-            boardCards[key] = key;
-            selectedCard = key;
+          if (boardCards[_key] === action.cardName) {
+            boardCards[_key] = _key;
+            selectedCard = _key;
             break;
           }
         }
@@ -1425,14 +1425,11 @@ function cardReducer() {
       return Object.assign({}, state, { selectedCard: selectedCard,
         boardCards: boardCards });
     case 'ADD_CHOSEN_CARD':
-      chosenCards = Array.from(state.chosenCards);
-      chosenCards.push(action.cardName);
-      return Object.assign({}, state, { chosenCards: chosenCards });
+      return Object.assign({}, state, { chosenCards: state.chosenCards.concat(action.cardName) });
     case 'REMOVE_CHOSEN_CARD':
-      chosenCards = state.chosenCards.filter(function (card) {
-        return card !== action.cardName;
-      });
-      return Object.assign({}, state, { chosenCards: chosenCards });
+      return Object.assign({}, state, { chosenCards: state.chosenCards.filter(function (card) {
+          return card !== action.cardName;
+        }) });
     case 'SET_PLAYER_CARDS':
       playerCards = Object.assign({}, state.playerCards);
       for (var i = parseInt(action.playersAmount); i < 9; ++i) {
@@ -1517,9 +1514,8 @@ function optionReducer() {
       playerNames[action.playerId] = action.playerName;
       return Object.assign({}, state, { playerNames: playerNames });
     case 'ADD_POKER_STATISTICS':
-      var winningChances = Array.from(action.pokerStatistics.percentages);
-      var histograms = Array.from(action.pokerStatistics.histograms);
-      return Object.assign({}, state, { winningChances: winningChances, histograms: histograms });
+      return Object.assign({}, state, { winningChances: Array.from(action.pokerStatistics.percentages),
+        histograms: Array.from(action.pokerStatistics.histograms) });
     case 'BEGIN_COUNTING':
       return Object.assign({}, state, { isCounting: true });
     case 'COMPLETE_COUNTING':

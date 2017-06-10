@@ -2,7 +2,7 @@
 
 App for counting simple poker statistics.
 
- [![](screenshot.png)](http://dreamerrr.me/poker)
+ [![](screenshot.png)](http://ilyavenskiy.com/poker)
 
 ## License
 

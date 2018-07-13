@@ -45,12 +45,12 @@ body {
     background-position: center;
     margin: 1px; }
   .Card-in:hover {
-    background-image: url(http://dreamerrr.me/media/poker/delete-cross.png); }
+    background-image: url(http://ilyavenskiy.com/static/images/delete-cross.png); }
 
 .PokerTable {
   flex: 0 0 535px;
   display: inline-block;
-  background-image: url(http://dreamerrr.me/media/poker/poker-table.png);
+  background-image: url(http://ilyavenskiy.com/static/images/poker-table.png);
   background-size: cover;
   background-repeat: no-repeat; }
   .PokerTable .Card, .PokerTable .Card-chosen, .PokerTable .Card-in {

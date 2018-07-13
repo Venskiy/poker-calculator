@@ -62,14 +62,14 @@ body {
   }
 
   &-in:hover {
-    background-image: url(http://ilyavenskiy.com/media/poker/delete-cross.png);
+    background-image: url(http://ilyavenskiy.com/static/images/delete-cross.png);
   }
 }
 
 .PokerTable {
   flex: 0 0 535px;
   display: inline-block;
-  background-image: url(http://ilyavenskiy.com/media/poker/poker-table.png);
+  background-image: url(http://ilyavenskiy.com/static/images/poker-table.png);
   background-size: cover;
   background-repeat: no-repeat;
 

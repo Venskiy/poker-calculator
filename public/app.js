@@ -1618,7 +1618,7 @@ var calculatePokerStatistics = exports.calculatePokerStatistics = function calcu
   }
 
   return new Promise(function (resolve, reject) {
-    fetch('http://dreamerrr.me/poker_calculator/count', {
+    fetch('http://ilyavenskiy.com/poker/count', {
       method: 'post',
       body: JSON.stringify({
         playersCards: _playerCards,

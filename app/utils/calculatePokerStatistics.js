@@ -14,7 +14,7 @@ export const calculatePokerStatistics = (playersAmount, playerCards, boardCards)
   }
 
   return new Promise((resolve, reject) => {
-    fetch('http://ilyavenskiy.com/poker_calculator/count', {
+    fetch('http://ilyavenskiy.com/poker/count', {
       method: 'post',
       body: JSON.stringify({
         playersCards: _playerCards,
